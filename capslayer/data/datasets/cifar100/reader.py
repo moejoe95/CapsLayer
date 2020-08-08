@@ -13,9 +13,9 @@
 # limitations under the License.
 # ==========================================================================
 
-"""Input utility functions for reading Cifar10 dataset.
+"""Input utility functions for reading Cifar100 dataset.
 
-Handles reading from Cifar10 dataset saved in binary original format. Scales and
+Handles reading from Cifar100 dataset saved in binary original format. Scales and
 normalizes the images as the preprocessing step. It can distort the images by
 random cropping and contrast adjusting.
 """

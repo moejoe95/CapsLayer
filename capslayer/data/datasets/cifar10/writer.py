@@ -26,15 +26,13 @@ from tensorflow.python.keras.datasets.cifar import load_batch
 
 from capslayer.data.utils.TFRecordHelper import int64_feature, bytes_feature
 
-
 URL = "http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
 md5sum = 'c58f30108f718f92721af3b95e74349a'
 
 
-def load_cifar10(split, path=None):
-    if path is None:
-        cache_path = os.path.join(os.path.expanduser('~'), ".capslayer")
-        path = get_file('cifar-10-batches-py', cache_dir=cache_path, file_hash=md5sum, origin=URL, untar=True)
+def load_cifar10(split, path):
+
+    path = get_file('cifar-10-batches-py', cache_dir=path, file_hash=md5sum, origin=URL, untar=True)
 
     split = split.lower()
     if split == 'test':
@@ -77,11 +75,6 @@ def tfrecord_runner(path=None, force=True):
     eval_set = load_cifar10(path=path, split='eval')
     test_set = load_cifar10(path=path, split='test')
 
-    if path is None:
-        path = os.path.join(os.path.expanduser('~'), ".capslayer", "datasets", "cifar10")
-    if not os.path.exists(path):
-        os.makedirs(path)
-
     train_set_outpath = os.path.join(path, "train_cifar10.tfrecord")
     eval_set_outpath = os.path.join(path, "eval_cifar10.tfrecord")
     test_set_outpath = os.path.join(path, "test_cifar10.tfrecord")
@@ -92,3 +85,7 @@ def tfrecord_runner(path=None, force=True):
         encode_and_write(eval_set, eval_set_outpath)
     if not os.path.exists(test_set_outpath) or force:
         encode_and_write(test_set, test_set_outpath)
+
+if __name__ == '__main__':
+    path = "models/data/cifar10"
+    tfrecord_runner(path)

@@ -26,7 +26,7 @@ from __future__ import print_function
 
 import os
 import tensorflow as tf
-
+from capslayer.data.utils.download_utils import maybe_download_and_extract
 from capslayer.data.datasets.cifar10.writer import tfrecord_runner
 
 
@@ -53,9 +53,20 @@ class DataLoader(object):
                  splitting="TVT",
                  one_hot=False,
                  name="create_inputs"):
-        if path is None or not os.path.exists(path):
-            tfrecord_runner()
-            path = os.path.join(os.path.expanduser('~'), ".capslayer", "datasets", "cifar10")
+
+        if path is None:
+            path = os.path.join(os.environ["HOME"], ".cache", "capslayer", "datasets", "cifar10")
+            os.makedirs(path, exist_ok=True)
+        elif os.access(path, os.F_OK):
+            path = path if os.path.basename(path) == "cifar10" else os.path.join(path, "cifar10")
+            os.makedirs(path, exist_ok=True)
+        elif os.access(path, os.W_OK):
+            raise IOError("Permission denied! Path %s is not writable." % (str(path)))
+
+        # data downloaded and data extracted?
+        maybe_download_and_extract("cifar10", path)
+        # data tfrecorded?
+        tfrecord_runner(path, force=False)
 
         self.handle = tf.placeholder(tf.string, shape=[])
         self.next_element = None

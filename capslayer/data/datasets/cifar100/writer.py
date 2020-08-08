@@ -31,10 +31,9 @@ URL = "https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz"
 md5sum = 'eb9058c3a382ffc7106e4002c42a8d85'
 
 
-def load_cifar100(split, path=None):
-    if path is None:
-        cache_path = os.path.join(os.path.expanduser('~'), ".capslayer")
-        path = get_file('cifar-100-python', cache_dir=cache_path, file_hash=md5sum, origin=URL, untar=True)
+def load_cifar100(split, path):
+
+    path = get_file('cifar-100-python', cache_dir=path, file_hash=md5sum, origin=URL, untar=True)
 
     split = split.lower()
     if split == 'test':

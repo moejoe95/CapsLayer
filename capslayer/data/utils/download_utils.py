@@ -103,7 +103,7 @@ def maybe_download_and_extract(dataset, save_to, force=False):
         download_and_uncompress_zip(FASHION_MNIST_TRAIN_LABELS_URL, save_to, force)
         download_and_uncompress_zip(FASHION_MNIST_TEST_IMGS_URL, save_to, force)
         download_and_uncompress_zip(FASHION_MNIST_TEST_LABELS_URL, save_to, force)
-    elif dataset == 'smallNORB':
+    elif dataset == 'small_norb':
         print("Start downloading dataset small NORB:")
         download_and_uncompress_zip(SMALLNORB_TRAIN_DAT_URL, save_to, force)
         download_and_uncompress_zip(SMALLNORB_TRAIN_CAT_URL, save_to, force)

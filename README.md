@@ -29,6 +29,7 @@ This library is based on [Tensorflow](https://www.tensorflow.org) and has a simi
 
 - Algorithm support:
 	- [x] Routing-by-agreement: including EM Routing and Dynamic Routing
+	- [x] [Scaled-distance-agreement routing](https://arxiv.org/pdf/1812.09707.pdf)
 
 If you want us to support more features, let us know by opening Issues or sending E-mail to naturomics.liao@gmail.com
 

@@ -90,6 +90,10 @@ class CapsNet(object):
                                                 name="ConvCaps2_layer")
 
         probs.append(tf.reduce_mean(activation))
+
+        # convCaps.shape = (?, 3, 3, 32, 4, 4)
+        # activation.shape = (?, 3, 3, 32)
+
         self.poses, self.probs = cl.layers.dense(convCaps,
                                                  activation,
                                                  num_outputs=self.num_label,
@@ -97,6 +101,14 @@ class CapsNet(object):
                                                  routing_method=routing_method,
                                                  coordinate_addition=True,
                                                  name="ClassCaps_layer")
+                                                 
+        # self.poses.shape = (?, 10, 4, 4)
+        # self.probs.shape = (?, 10)
+
+        # count number of paramters
+        num_param = np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
+        print('parameters:', num_param)
+
         probs.append(tf.reduce_mean(self.probs))
         tf.summary.scalar("probs", tf.reduce_mean(probs))
 

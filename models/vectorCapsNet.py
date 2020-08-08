@@ -71,16 +71,24 @@ class CapsNet(object):
                                                             method="norm")
 
         with tf.variable_scope('DigitCaps_layer'):
-            routing_method = "EMRouting"
+            routing_method = "SDARouting"
             num_inputs = np.prod(cl.shape(primaryCaps)[1:4])
             primaryCaps = tf.reshape(primaryCaps, shape=[-1, num_inputs, 8, 1])
             activation = tf.reshape(activation, shape=[-1, num_inputs])
+            
+            # primaryCaps.shape = (?, 1152, 8, 1)
+            # activation.shape = (?, 1152)
+
             self.poses, self.probs = cl.layers.dense(primaryCaps,
                                                      activation,
                                                      num_outputs=self.num_label,
                                                      out_caps_dims=[16, 1],
                                                      routing_method=routing_method)
             cl.summary.histogram('activation', self.probs, verbose=cfg.summary_verbose)
+
+        # count number of paramters
+        num_param = np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
+        print('parameters:', num_param)
 
         # Decoder structure
         # Reconstructe the inputs with 3 FC layers

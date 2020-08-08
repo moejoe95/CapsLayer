@@ -83,6 +83,9 @@ def dense(inputs, activation,
         else:
             raise TypeError("Wrong rank for inputs or activation")
 
+        if routing_method == 'SDARouting':
+            activation = tf.norm(inputs, axis=(-2, -1))
+
         pose, activation = routing(vote, activation, routing_method)
         # pose, activation = cl.core.gluing(vote, activation)
         assert len(pose.shape) == 4
@@ -116,6 +119,7 @@ def primaryCaps(inputs, filters,
     with tf.variable_scope(name):
         channels = filters * np.prod(out_caps_dims)
         channels = channels + filters if method == "logistic" else channels
+
         pose = tf.layers.conv2d(inputs, channels,
                                 kernel_size=kernel_size,
                                 strides=strides, activation=None)
@@ -135,6 +139,7 @@ def primaryCaps(inputs, filters,
             squash_on = -2 if out_caps_dims[-1] == 1 else [-2, -1]
             pose = cl.ops.squash(pose, axis=squash_on)
             activation = cl.norm(pose, axis=(-2, -1))
+
         activation = tf.clip_by_value(activation, 1e-20, 1. - 1e-20)
 
         return(pose, activation)

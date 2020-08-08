@@ -70,6 +70,7 @@ def train(model, data_loader):
     validation_iterator = data_loader(cfg.batch_size, mode="eval")
     inputs = data_loader.next_element["images"]
     labels = data_loader.next_element["labels"]
+
     model.create_network(inputs, labels)
 
     loss, train_ops, summary_ops = model.train(cfg.num_gpus)
@@ -87,6 +88,15 @@ def train(model, data_loader):
     config.gpu_options.allow_growth = True
 
     with tf.Session(config=config) as sess:
+
+        last_checkpoint = tf.train.latest_checkpoint(cfg.logdir)
+        if last_checkpoint is None:
+            tf.logging.info('Train model from scratch!')
+        else:
+            saver.restore(sess, last_checkpoint)
+            tf.logging.info('Model restored!')
+        
+
         training_handle = sess.run(training_iterator.string_handle())
         validation_handle = sess.run(validation_iterator.string_handle())
         init_op = tf.global_variables_initializer()
@@ -192,7 +202,8 @@ def evaluate(model, data_loader):
 
 
 def main(_):
-    model_list = ['baseline', 'vectorCapsNet', 'matrixCapsNet', 'convCapsNet']
+
+    model_list = ['baseline', 'vectorCapsNet', 'matrixCapsNet', 'vectorConvCapsNet']
 
     # Deciding which model to use
     if cfg.model == 'baseline':
@@ -203,15 +214,20 @@ def main(_):
         raise ValueError('Unsupported model, please check the name of model:', cfg.model)
 
     # Deciding which dataset to use
-    if cfg.dataset == 'mnist' or cfg.dataset == 'fashion-mnist':
+    if cfg.dataset == 'mnist' or cfg.dataset == 'fashion_mnist':
         height = 28
         width = 28
         channels = 1
         num_label = 10
-    elif cfg.dataset == 'smallNORB':
-        num_label = 5
+    elif cfg.dataset == 'cifar10' or cfg.dataset == 'cifar100':
         height = 32
         width = 32
+        channels = 3
+        num_label = 10
+    elif cfg.dataset == 'small_norb':
+        num_label = 5
+        height = 96
+        width = 96
         channels = 1
 
     # Initializing model and data loader
@@ -229,4 +245,11 @@ def main(_):
 
 
 if __name__ == "__main__":
+
+    try:
+        import cluster_setup
+    except ImportError:
+        print('IMPORT ERROR')
+        pass
+
     tf.app.run()

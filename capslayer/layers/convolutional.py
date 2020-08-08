@@ -33,7 +33,8 @@ def conv2d(inputs,
            padding="valid",
            routing_method="EMRouting",
            name=None,
-           reuse=None):
+           reuse=None,
+           num_iter=3):
     """A 2D convolutional capsule layer.
 
     Args:
@@ -47,6 +48,7 @@ def conv2d(inputs,
         routing_method: One of "EMRouting" or "DynamicRouting", the method of routing-by-agreement algorithm.
         name: A string, the name of the layer.
         reuse: Boolean, whether to reuse the weights of a previous layer by the same name.
+        num_iter: number of routing iterations.
 
     Returns:
         pose: A 6-D tensor with shape [batch_size, out_height, out_width, out_channesl] + out_caps_dims.
@@ -97,8 +99,11 @@ def conv2d(inputs,
                             num_outputs=filters,
                             out_caps_dims=out_caps_dims)
 
+        if routing_method == 'SDARouting':
+            activation = tf.norm(batched, axis=(-2, -1))
+            
         # 3. routing
-        pose, activation = routing(vote, activation, method=routing_method)
+        pose, activation = routing(vote, activation, method=routing_method, num_iter=num_iter)
 
         return pose, activation
 

@@ -17,12 +17,12 @@ flags.DEFINE_float('m_scheduler', 1, '.')
 flags.DEFINE_float('lambda_val', 0.5, 'down weight of the loss for absent digit classes')
 
 # for training
-flags.DEFINE_integer('batch_size', 128, 'batch size')
+flags.DEFINE_integer('batch_size', 16, 'batch size')
 flags.DEFINE_integer('num_steps', 50000, 'The number of training steps, default: 50,000')
 flags.DEFINE_integer('iter_routing', 3, 'number of iterations in routing algorithm')
-flags.DEFINE_integer('train_sum_every', 200, 'the frequency of saving train summary(step)')
+flags.DEFINE_integer('train_sum_every', 500, 'the frequency of saving train summary(step)')
 flags.DEFINE_integer('val_sum_every', 500, 'the frequency of saving valuation summary(step)')
-flags.DEFINE_integer('save_ckpt_every', 1000, 'the frequency of saving model(step)')
+flags.DEFINE_integer('save_ckpt_every', 2000, 'the frequency of saving model(step)')
 
 flags.DEFINE_float('regularization_scale', 0.392, 'regularization coefficient for reconstruction loss, default to 0.0005*784=0.392')
 
@@ -33,11 +33,11 @@ flags.DEFINE_float('regularization_scale', 0.392, 'regularization coefficient fo
 flags.DEFINE_string('model', 'vectorCapsNet',
                     'The model to use. Default: vectorCapsNet')
 
-supported_datasets = ["mnist", "fashion_mnist", "cifar10", "cifar100", "norb", "celeba"]
+supported_datasets = ["mnist", "fashion_mnist", "cifar10", "cifar100", "small-norb", "celeba"]
 flags.DEFINE_string('dataset', 'mnist',
                     'The name of dataset, one of [' + ", ".join(supported_datasets) + ']. Default: mnist')
 
-data_dir = os.path.join("data", "mnist")
+data_dir = os.path.abspath("data")
 results_dir = os.path.join('models', 'results')
 logdir = os.path.join(results_dir, 'logdir')
 

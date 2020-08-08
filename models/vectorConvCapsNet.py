@@ -65,22 +65,18 @@ class CapsNet(object):
                                  strides=1,
                                  padding='VALID',
                                  activation=tf.nn.relu,
-                                 name="Conv1_layer")  # (?, 20, 20, 256)
+                                 name="Conv1_layer")
 
-        vec_shape = [8, 1]
-
-        print('conv1', conv1.shape)
+        self.vec_shape = [8, 1]
 
         # primary caps layer
         pose_conv, activation_conv = cl.layers.primaryCaps(conv1,
                                                 filters=32,
                                                 kernel_size=9,
-                                                strides=1,
-                                                out_caps_dims=vec_shape,
+                                                strides=2,
+                                                out_caps_dims=self.vec_shape,
                                                 method="norm",
-                                                name="PrimaryCaps_layer")  # (?, 12, 12, 32, 8, 1)
-
-        print('primary', pose_conv.shape)
+                                                name="PrimaryCaps_layer")
 
         routing_method = 'SDARouting'
 
@@ -88,45 +84,28 @@ class CapsNet(object):
         pose_conv, activation_conv = cl.layers.conv2d(pose_conv,
                                                 activation_conv,
                                                 filters=32,
-                                                out_caps_dims=vec_shape,
-                                                kernel_size=5,
+                                                out_caps_dims=self.vec_shape,
+                                                kernel_size=3,
                                                 strides=1,
                                                 routing_method=routing_method,
-                                                num_iter=1,
-                                                name="ConvCaps_layer1")  # (?, 8, 8, 32, 8, 1)
-
-        print('conv_caps1', pose_conv.shape)
+                                                num_iter=3,
+                                                name="ConvCaps_layer1")
 
         # 2nd convolutional capsule layer
         pose_conv, activation_conv = cl.layers.conv2d(pose_conv,
                                                 activation_conv,
                                                 filters=32,
-                                                out_caps_dims=vec_shape,
-                                                kernel_size=3,
-                                                strides=1,
-                                                routing_method=routing_method,
-                                                num_iter=2,
-                                                name="ConvCaps_layer2")  # (?, 6, 6, 32, 8, 1)
-        
-        print('conv_caps2', pose_conv.shape)
-
-        # 3rd convolutional capsule layer
-        pose_conv, activation_conv = cl.layers.conv2d(pose_conv,
-                                                activation_conv,
-                                                filters=32,
-                                                out_caps_dims=vec_shape,
+                                                out_caps_dims=self.vec_shape,
                                                 kernel_size=3,
                                                 strides=1,
                                                 routing_method=routing_method,
                                                 num_iter=3,
-                                                name="ConvCaps_layer3")  # (?, 4, 4, 32, 8, 1)
-
-        print('conv_caps3', pose_conv.shape)
+                                                name="ConvCaps_layer2")
 
         # fully connected capsule layer
         with tf.variable_scope('FullyConnCaps_layer'):
             num_inputs = np.prod(cl.shape(pose_conv)[1:4])
-            pose_conv = tf.reshape(pose_conv, shape=[-1, num_inputs, vec_shape[0], vec_shape[1]])
+            pose_conv = tf.reshape(pose_conv, shape=[-1, num_inputs, self.vec_shape[0], self.vec_shape[1]])
             activation_conv = tf.reshape(activation_conv, shape=[-1, num_inputs])
 
             self.poses, self.probs = cl.layers.dense(pose_conv,
@@ -135,21 +114,32 @@ class CapsNet(object):
                                                      out_caps_dims=[16, 1],
                                                      routing_method=routing_method)
 
-        
-        # count number of paramters
-        num_param = np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
-        print('parameters:', num_param)
+        self.create_deconv_decoder()
+        self.calculate_accuracy()
 
-        # Decoder structure
-        # Reconstructe the inputs with 3 FC layers
+        return self.poses, self.probs
+
+
+    def print_num_parameters():
+        num_param = np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
+        print('number parameters:', num_param)
+
+
+    def create_fc_decoder(self):
+        '''
+        Reconstruction network from CapsLayer
+        '''
         with tf.variable_scope('Decoder'):
             labels = tf.one_hot(self.labels, depth=self.num_label, axis=-1, dtype=tf.float32)
             self.labels_one_hoted = tf.reshape(labels, (-1, self.num_label, 1, 1))
+
             masked_caps = tf.multiply(self.poses, self.labels_one_hoted)
             num_inputs = np.prod(masked_caps.get_shape().as_list()[1:])
             active_caps = tf.reshape(masked_caps, shape=(-1, num_inputs))
+
             fc1 = tf.layers.dense(active_caps, units=512, activation=tf.nn.relu)
             fc2 = tf.layers.dense(fc1, units=1024, activation=tf.nn.relu)
+
             num_outputs = self.height * self.width * self.channels
             self.recon_imgs = tf.layers.dense(fc2,
                                               units=num_outputs,
@@ -157,6 +147,99 @@ class CapsNet(object):
             recon_imgs = tf.reshape(self.recon_imgs, shape=[-1, self.height, self.width, self.channels])
             cl.summary.image('reconstruction_img', recon_imgs, verbose=cfg.summary_verbose)
 
+
+    def create_fc_decoder_gamma(self):
+        '''
+        Reconstruction network from gamma-capsule-network
+        '''
+        with tf.variable_scope('Decoder'):
+            labels = tf.one_hot(self.labels, depth=self.num_label, axis=-1, dtype=tf.float32)
+            self.labels_one_hoted = tf.reshape(labels, (-1, self.num_label, 1, 1))
+
+            num_outputs = self.height * self.width * self.channels
+
+            flatten = tf.keras.layers.Flatten()
+            fc1 = tf.keras.layers.Dense(512, activation=tf.nn.relu)
+            fc2 = tf.keras.layers.Dense(1024, activation=tf.nn.relu)
+            fc3 = tf.keras.layers.Dense(num_outputs, activation=tf.sigmoid)
+
+            x = flatten(self.poses)
+            x = fc1(x)
+            x = fc2(x)
+            self.recon_imgs = fc3(x)
+
+            recon_imgs = tf.reshape(self.recon_imgs, shape=[-1, self.height, self.width, self.channels])
+            cl.summary.image('reconstruction_img', recon_imgs, verbose=cfg.summary_verbose)
+
+
+    def mask(self):
+        '''
+        @ Aryan Mobiny https://github.com/amobiny/Deep_Capsule_Network/blob/master/models/base_model.py
+        '''
+        with tf.variable_scope('Masking'):
+            labels = tf.one_hot(self.labels, depth=self.num_label, axis=-1, dtype=tf.float32)
+            self.labels_one_hoted = tf.reshape(labels, (-1, self.num_label, 1, 1))
+            # [?, 10] (one-hot-encoded predicted labels)
+
+            # TODO do not hardcode this
+            self.is_training = tf.constant(True)
+
+            reconst_targets = tf.cond(self.is_training,  # condition
+                                      lambda: tf.cast(self.labels, dtype='float32'),  # if True (Training)
+                                      lambda: self.labels_one_hoted,  # if False (Test)
+                                      name="reconstruction_targets")
+            # [?, 10]
+            self.output_masked = tf.multiply(self.probs, tf.expand_dims(reconst_targets, -1))
+            # [?, 2, 16]
+
+
+    def create_deconv_decoder(self):
+        '''
+        @ Aryan Mobiny https://github.com/amobiny/Deep_Capsule_Network/blob/master/models/Deep_CapsNet.py
+        '''
+        self.mask()
+        with tf.variable_scope('Deconv_Decoder'):
+            cube_size = np.sqrt(self.vec_shape[0]).astype(int)
+            decoder_input = tf.reshape(self.output_masked, [-1, self.num_label, cube_size, cube_size])
+            cube = tf.transpose(decoder_input, [0, 2, 3, 1])
+
+            conv_rec1_params = {"filters": 8,
+                                "kernel_size": 2,
+                                "strides": 1,
+                                "padding": "same",
+                                "activation": tf.nn.relu}
+
+            conv_rec2_params = {"filters": 16,
+                                "kernel_size": 3,
+                                "strides": 1,
+                                "padding": "same",
+                                "activation": tf.nn.relu}
+
+            conv_rec3_params = {"filters": 16,
+                                "kernel_size": 3,
+                                "strides": 1,
+                                "padding": "same",
+                                "activation": tf.nn.relu}
+
+            conv_rec4_params = {"filters": 1,
+                                "kernel_size": 3,
+                                "strides": 1,
+                                "padding": "same",
+                                "activation": None}
+
+            conv_rec1 = tf.layers.conv2d(cube, name="conv1_rec", **conv_rec1_params)
+            res1 = tf.image.resize_images(conv_rec1, (8, 8), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            conv_rec2 = tf.layers.conv2d(res1, name="conv2_rec", **conv_rec2_params)
+            res2 = tf.image.resize_images(conv_rec2, (17, 17), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            conv_rec3 = tf.layers.conv2d(res2, name="conv3_rec", **conv_rec3_params)
+            # TODO is only for 28*28 images with one channel
+            res3 = tf.image.resize_images(conv_rec3, (56, 56), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            self.recon_imgs = tf.layers.conv2d(res3, name="conv4_rec", **conv_rec4_params)
+
+            self.recon_imgs = tf.reshape(self.recon_imgs, shape=(-1, self.height * self.width * self.channels))
+
+
+    def calculate_accuracy(self):
         with tf.variable_scope('accuracy'):
             logits_idx = tf.to_int32(tf.argmax(cl.softmax(self.probs, axis=1), axis=1))
             correct_prediction = tf.equal(tf.to_int32(self.labels), logits_idx)
@@ -164,7 +247,6 @@ class CapsNet(object):
             self.accuracy = tf.reduce_mean(correct / tf.cast(tf.shape(self.probs)[0], tf.float32))
             cl.summary.scalar('accuracy', self.accuracy, verbose=cfg.summary_verbose)
 
-        return self.poses, self.probs
 
     def _loss(self):
         with tf.variable_scope("loss"):
@@ -174,8 +256,8 @@ class CapsNet(object):
             cl.summary.scalar('margin_loss', margin_loss, verbose=cfg.summary_verbose)
 
             # 2. The reconstruction loss
-            orgin = tf.reshape(self.raw_imgs, shape=(-1, self.height * self.width * self.channels))
-            squared = tf.square(self.recon_imgs - orgin)
+            origin = tf.reshape(self.raw_imgs, shape=(-1, self.height * self.width * self.channels))
+            squared = tf.square(self.recon_imgs - origin)
             reconstruction_err = tf.reduce_mean(squared)
             cl.summary.scalar('reconstruction_loss', reconstruction_err, verbose=cfg.summary_verbose)
 

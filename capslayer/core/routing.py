@@ -44,7 +44,7 @@ def routing(votes,
     activation_rank = len(activation.shape)
     if vote_rank != 5 and vote_rank != 7:
         raise ValueError('Votes to "routing" should have rank 5 or 7 but it is rank', str(vote_rank))
-    if activation_rank != 2 and activation_rank != 4:
+    if activation_rank != 2 and activation_rank != 4 and method != 'SDARouting':
         raise ValueError('Activation to "routing" should have rank 2 or 4 but it is rank', str(activation_rank))
 
     name = "routing" if name is None else name
@@ -56,6 +56,8 @@ def routing(votes,
                 raise ValueError('"DynamicRouting" method only works for vetocr, please set the "out_caps_dims" like [n, 1]')
             pose, activation = dynamicRouting(votes, num_iter, leaky=True)
             # pose, activation = dynamicRouting_v1(votes, num_iter, leaky=True)
+        elif method == 'SDARouting':
+            pose, activation = SDARouting(votes, activation, num_iter)
         else:
             raise Exception('Invalid routing method!', method)
 
@@ -63,6 +65,116 @@ def routing(votes,
     assert len(pose.shape) == 4 or len(pose.shape) == 6
     assert len(activation.shape) == 2 or len(activation.shape) == 4
     return(pose, activation)
+
+
+def SDARouting(votes, act_norm, num_routing):
+    """ Scaled-distance agreement routing algorithm.
+        See [Peer et al., 2018](https://arxiv.org/pdf/1812.09707.pdf)
+
+    Args:
+        votes: A 5-D or 7-D tensor that represent the votes from previous layer. (?, kernel, kernel, in_capsules, out_capsules, out_dim, 1)
+        act_norm: A 4-D or 2-D tensor that represent the poses from previous layer. (?, kernel, kernel, in_capsules)
+        num_routing: Integer, number of routing iterations.
+
+    Returns:
+        poses: A 4-D or 6-D tensor.
+        probs: A 2-D or 4-D tensor.
+    """
+
+    # define shapes
+    vote_shape = cl.shape(votes)  # (?, 5, 5, 288, 32, 8, 1)
+    out_capsules = vote_shape[-3]
+    in_capsules = vote_shape[-4]
+    out_dim = vote_shape[-2]
+    batch_size = vote_shape[0]
+    kernel = vote_shape[1]
+    vote_len = len(vote_shape)
+
+    # restrict
+    tiling_shape = [1, 1, 1, out_capsules, 1, out_dim, 1]  
+    if vote_len != 7:
+        tiling_shape = [1, out_capsules, 1, out_dim, 1]  
+
+        act_norm = tf.expand_dims(act_norm, axis=1)
+        act_norm = tf.expand_dims(act_norm, axis=3)
+        act_norm = tf.expand_dims(act_norm, axis=-1)
+
+        act_norm = tf.reshape(act_norm, [batch_size, 1, in_capsules, 1, 1])
+
+    else:
+        act_norm = tf.reshape(act_norm, [batch_size, kernel, kernel, 1, in_capsules, 1, 1])
+    
+    act_norm = tf.tile(act_norm, tiling_shape)
+
+    votes_shape = [batch_size, kernel, kernel, out_capsules, in_capsules, out_dim, 1]
+    if vote_len != 7:
+        votes_shape = [batch_size, out_capsules, in_capsules, out_dim, 1]
+
+    votes = tf.reshape(votes, votes_shape)
+    votes_norm = tf.norm(votes, axis=-2, keepdims=True)
+
+    votes = (votes / votes_norm) * tf.math.minimum(act_norm, votes_norm)
+    
+    # define bias
+    bias_init = tf.constant_initializer(0.1)
+    bias_tile_shape = [batch_size, 1, 1, 1, 1, 1]
+    bias_shape = (1, 1, 1, out_capsules, out_dim, 1)
+
+    if vote_len != 7:
+        bias_tile_shape = [batch_size, 1, 1, 1]
+        bias_shape = (1, out_capsules, out_dim, 1)
+
+    bias = tf.Variable(initial_value=bias_init(shape=bias_shape, dtype='float32'), trainable=True)
+    bias = tf.tile(bias, bias_tile_shape)
+    
+    # init variables
+    vote_shape = cl.shape(votes)
+    logit_shape = vote_shape[:-2] + [1, 1]
+    logits = tf.fill(logit_shape, 0.0)
+
+    # routing loop 
+    for i in range(num_routing):
+
+        route = tf.nn.softmax(logits, axis=-4)
+        route_tile_shape = [1, 1, 1, 1, 1, out_dim, 1]
+        
+        if vote_len != 7:
+            route_tile_shape = [1, 1, 1, out_dim, 1]
+
+        route_tiled = tf.tile(route, route_tile_shape)
+
+        trans_mat = route_tiled * votes  # (?, 5, 5, 32, 288, 8, 1)
+        preactivate = cl.reduce_sum(trans_mat, axis=-3) + bias  # (?, 5, 5, 32, 8, 1)
+        pose = cl.ops.squash(preactivate, axis=-2)  # (?, 5, 5, 32, 8, 1)
+
+        if i < num_routing - 1:
+            pose = tf.expand_dims(pose, -3)
+            pose_tile_shape = [1, 1, 1, 1, in_capsules, 1, 1]
+            
+            if vote_len != 7:
+                pose_tile_shape = [1, 1, in_capsules, 1, 1]
+
+            pose = tf.tile(pose, pose_tile_shape)
+
+            d = tf.norm(pose - votes, axis=-2, keepdims=True)
+            distances = get_t_factor(d, out_capsules) * d
+            logits += distances
+
+
+    # get probability by calculating norm
+    probs = tf.norm(pose, axis=[-2, -1])
+
+    return pose, probs
+
+
+def get_t_factor(d, out_capsules):
+    """calculate T factor 
+    """
+    d_o = tf.reduce_mean(tf.reduce_mean(d))
+    d_p = d_o * 0.5
+    p_p = 0.9
+    t = tf.constant(np.log(p_p * (out_capsules - 1.0)) - np.log(1.0 - p_p), dtype=tf.float32) / (d_p - d_o + 1e-12)
+    return tf.expand_dims(t, axis=-1)
 
 
 def dynamicRouting(votes,
@@ -88,6 +200,9 @@ def dynamicRouting(votes,
     logit_shape = vote_shape[:-2] + [1, 1]
     logits = tf.fill(logit_shape, 0.0)
     squash_on = -2 if vote_shape[-1] == 1 else [-2, -1]
+
+    # logits (?, 5, 5, 288, 32, 1, 1)
+
     if use_bias:
         bias_shape = [1 for i in range(len(vote_shape) - 3)] + vote_shape[-3:]
         biases = tf.get_variable("biases",
@@ -126,8 +241,13 @@ def dynamicRouting(votes,
                                      _body,
                                      loop_vars=[i, logits, poses],
                                      swap_memory=True)
+
+   
     poses = tf.squeeze(poses.read(num_routing - 1), axis=-4)
     probs = tf.norm(poses, axis=[-2, -1])
+
+    # poses (?, 5, 5, 32, 8, 1)
+    # probs (?, 5, 5, 32)
 
     return poses, probs
 

@@ -3,15 +3,16 @@ import numpy as np
 
 class FCDecoderNet(object):
 
-    def __init__(self, height, width, channels, num_label, labels):
+    def __init__(self, height, width, channels, num_label, labels, poses):
         self.height = height
         self.width = width
         self.channels = channels
         self.num_label = num_label
         self.labels = labels
+        self.poses = poses
 
 
-    def create_fc_decoder(self):
+    def reconstruct_image_v1(self):
         '''
         Reconstruction network from CapsLayer, needs ~1.4m parameters for 28x28x1 images!
         '''
@@ -19,7 +20,7 @@ class FCDecoderNet(object):
             labels = tf.one_hot(self.labels, depth=self.num_label, axis=-1, dtype=tf.float32)
             labels_one_hoted = tf.reshape(labels, (-1, self.num_label, 1, 1))
 
-            masked_caps = tf.multiply(self.poses, self.labels_one_hoted)
+            masked_caps = tf.multiply(self.poses, labels_one_hoted)
             num_inputs = np.prod(masked_caps.get_shape().as_list()[1:])
             active_caps = tf.reshape(masked_caps, shape=(-1, num_inputs))
 
@@ -34,7 +35,7 @@ class FCDecoderNet(object):
             return recon_imgs, labels_one_hoted
 
 
-    def create_fc_decoder_gamma(self):
+    def reconstruct_image_v2(self):
         '''
         Reconstruction network from gamma-capsule-network, needs ~1.4m parameters for 28x28x1 images!
         '''

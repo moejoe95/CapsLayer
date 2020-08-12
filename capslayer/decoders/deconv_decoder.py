@@ -45,7 +45,6 @@ class DeconvDecoderNet(object):
             cube_size = np.sqrt(self.vec_shape[0]).astype(int)
             decoder_input = tf.reshape(self.output_masked, [-1, self.num_label, cube_size, cube_size])
             cube = tf.transpose(decoder_input, [0, 2, 3, 1])
-            print('cube', cube.shape)
 
             conv_rec1_params = {"filters": 8,
                                 "kernel_size": 2,

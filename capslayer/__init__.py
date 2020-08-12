@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from capslayer import layers
+from capslayer import decoders
 from capslayer import data
 from capslayer.ops import losses
 from capslayer import summary
@@ -20,6 +21,7 @@ from capslayer.ops.ops import shape
 
 _allowed_symbols = [
     'layers',
+    'decoders'
     'data',
     'distributions',
     'losses',

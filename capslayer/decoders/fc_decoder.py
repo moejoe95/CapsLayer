@@ -12,7 +12,7 @@ class FCDecoderNet(object):
         self.poses = poses
 
 
-    def reconstruct_image_v1(self):
+    def reconstruct_image(self):
         '''
         Reconstruction network from CapsLayer, needs ~1.4m parameters for 28x28x1 images!
         '''

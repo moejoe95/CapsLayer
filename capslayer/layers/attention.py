@@ -26,6 +26,9 @@ def selfAttention(x, ch, name='attention'):
 
         shape = cl.shape(x)
         o = tf.reshape(o, shape=shape) # [bs, h, w, C]
+        
+        o = tf.layers.conv2d(o, channels, kernel_size=1, strides=1)
+
         x = gamma * o + x
 
         return x

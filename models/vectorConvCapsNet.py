@@ -20,6 +20,8 @@ from __future__ import print_function
 import numpy as np
 import capslayer as cl
 import tensorflow as tf
+
+import datetime
 import os
 
 from config import cfg
@@ -104,7 +106,7 @@ class CapsNet(object):
         # idea of attention in CapsNet is from Hoogi et al. 
         # in the paper 'Self-Attention Capsule Networks for Image Classification'
         if attention:
-            conv1 = cl.layers.selfAttention(conv1, 256)
+            conv1 = cl.layers.selfAttention(conv1, self.conv1_params['filters'])
 
         # primary caps layer
         pose_conv, activation_conv = cl.layers.primaryCaps(conv1,
@@ -208,10 +210,18 @@ class CapsNet(object):
 
         params = os.path.join(cfg.results_dir, 'params.conf')
         fd_params = open(params, 'w')
+
+        fd_params.write(cfg.model + ' at ' + str(datetime.datetime.now()) + '\n\n')
+
+        fd_params.write('number parameters: ' + str(self.num_params) + '\n\n')
+
         fd_params.write('dataset: ' + cfg.dataset + '\n')
+        fd_params.write('batch size: ' + str(cfg.batch_size) + '\n\n')
+
         fd_params.write('vector shape: ' + str(self.vec_shape) + '\n')
         fd_params.write('decoder ' + self.decoder + '\n')
         fd_params.write('attention: ' + str(self.attention) + '\n')
         fd_params.write('conv1: ' + str(self.conv1_params) + '\n')
         fd_params.write('primary caps: ' + str(self.prim_caps_params) + '\n')
         fd_params.write('conv caps: ' + str(self.conv_caps_params) + '\n')
+        fd_params.write('fc caps: ' + str(self.fc_caps_params) + '\n')

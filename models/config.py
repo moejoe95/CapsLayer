@@ -22,7 +22,7 @@ flags.DEFINE_integer('num_steps', 30000, 'The number of training steps, default:
 flags.DEFINE_integer('iter_routing', 3, 'number of iterations in routing algorithm')
 flags.DEFINE_integer('train_sum_every', 500, 'the frequency of saving train summary(step)')
 flags.DEFINE_integer('val_sum_every', 500, 'the frequency of saving valuation summary(step)')
-flags.DEFINE_integer('save_ckpt_every', 2000, 'the frequency of saving model(step)')
+flags.DEFINE_integer('save_ckpt_every', 1000, 'the frequency of saving model(step)')
 
 flags.DEFINE_float('regularization_scale', 0.392, 'regularization coefficient for reconstruction loss, default to 0.0005*784=0.392')
 

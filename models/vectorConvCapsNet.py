@@ -23,6 +23,7 @@ import tensorflow as tf
 
 import datetime
 import os
+import pprint
 
 from config import cfg
 
@@ -43,7 +44,7 @@ class CapsNet(object):
         self.num_label = num_label
 
 
-    def create_network(self, inputs, labels, attention=True, decoder='FC', routing_method='SDARouting', vec_shape=[8, 1]):
+    def create_network(self, inputs, labels):
         """ Setup a convolutional vector capsule network.
 
         Args:
@@ -57,14 +58,16 @@ class CapsNet(object):
             probs: Tensor with shape [batch_size, num_label], the probability of entity presence.
         """
 
-        # set model parameters
-
-        self.routing_method = routing_method
-        self.vec_shape = vec_shape
-        self.decoder = decoder
-        self.attention = attention
         self.raw_imgs = inputs
         self.labels = labels
+
+        # set model parameters
+
+        self.routing_method = 'SDARouting'
+        self.vec_shape = [8, 1]
+        self.decoder = 'DECONV'
+        self.attention = True
+        self.num_iter = 3
 
         self.conv1_params = {
             "filters": 256,
@@ -79,12 +82,21 @@ class CapsNet(object):
             "out_caps_dims": self.vec_shape
         }
 
-        self.conv_caps_params = {
+        self.conv_caps1_params = {
             "filters": 32,
             "kernel_size": 5,
             "strides": 1,
             "out_caps_dims": self.vec_shape,
-            "num_iter": 3,
+            "num_iter": self.num_iter,
+            "routing_method": self.routing_method
+        }
+
+        self.conv_caps2_params = {
+            "filters": 32,
+            "kernel_size": 3,
+            "strides": 1,
+            "out_caps_dims": self.vec_shape,
+            "num_iter": self.num_iter,
             "routing_method": self.routing_method
         }
 
@@ -105,7 +117,7 @@ class CapsNet(object):
 
         # idea of attention in CapsNet is from Hoogi et al. 
         # in the paper 'Self-Attention Capsule Networks for Image Classification'
-        if attention:
+        if self.attention:
             conv1 = cl.layers.selfAttention(conv1, self.conv1_params['filters'])
 
         # primary caps layer
@@ -117,8 +129,16 @@ class CapsNet(object):
         # 1st convolutional capsule layer
         pose_conv, activation_conv = cl.layers.conv2d(pose_conv,
                                                 activation_conv,
-                                                **self.conv_caps_params,
+                                                **self.conv_caps1_params,
                                                 name="ConvCaps_layer1")
+
+        # 2nd convolutional capsule layer
+        '''
+        pose_conv, activation_conv = cl.layers.conv2d(pose_conv,
+                                                activation_conv,
+                                                **self.conv_caps2_params,
+                                                name="ConvCaps_layer2")
+        '''
 
         # fully connected capsule layer
         with tf.variable_scope('FullyConnCaps_layer'):
@@ -131,15 +151,15 @@ class CapsNet(object):
                                                      **self.fc_caps_params)
 
         # reconstruction network
-        if decoder == 'FC':
-            decoder = cl.decoders.FCDecoderNet(self.height, 
+        if self.decoder == 'FC':
+            decoderNet = cl.decoders.FCDecoderNet(self.height, 
                                                 self.width, 
                                                 self.channels, 
                                                 self.num_label, 
                                                 self.labels,
                                                 self.poses)
-        elif decoder == 'DECONV':
-            decoder = cl.decoders.DeconvDecoderNet(self.height, 
+        elif self.decoder == 'DECONV':
+            decoderNet = cl.decoders.DeconvDecoderNet(self.height, 
                                                     self.width, 
                                                     self.channels, 
                                                     self.num_label, 
@@ -150,7 +170,7 @@ class CapsNet(object):
             print('decoder', decoder, 'not known. Value should be either FC or DECONV.')   
             exit(-1)   
 
-        self.recon_imgs, self.labels_one_hoted = decoder.reconstruct_image()
+        self.recon_imgs, self.labels_one_hoted = decoderNet.reconstruct_image()
 
         self.calculate_accuracy()
 
@@ -209,19 +229,21 @@ class CapsNet(object):
     def log_params(self):
 
         params = os.path.join(cfg.results_dir, 'params.conf')
-        fd_params = open(params, 'w')
+        with open(params, 'wt') as fd_params:
 
-        fd_params.write(cfg.model + ' at ' + str(datetime.datetime.now()) + '\n\n')
+            fd_params.write(cfg.model + ' at ' + str(datetime.datetime.now()) + '\n\n')
 
-        fd_params.write('number parameters: ' + str(self.num_params) + '\n\n')
+            # get all class variables
+            settings = self.__dict__.copy()
 
-        fd_params.write('dataset: ' + cfg.dataset + '\n')
-        fd_params.write('batch size: ' + str(cfg.batch_size) + '\n\n')
+            # remove runtime variables
+            settings.pop('raw_imgs')
+            settings.pop('labels')
+            settings.pop('poses')
+            settings.pop('probs')
+            settings.pop('recon_imgs')
+            settings.pop('labels_one_hoted')
+            settings.pop('accuracy')
 
-        fd_params.write('vector shape: ' + str(self.vec_shape) + '\n')
-        fd_params.write('decoder ' + self.decoder + '\n')
-        fd_params.write('attention: ' + str(self.attention) + '\n')
-        fd_params.write('conv1: ' + str(self.conv1_params) + '\n')
-        fd_params.write('primary caps: ' + str(self.prim_caps_params) + '\n')
-        fd_params.write('conv caps: ' + str(self.conv_caps_params) + '\n')
-        fd_params.write('fc caps: ' + str(self.fc_caps_params) + '\n')
+            pp = pprint.PrettyPrinter(indent=2, stream=fd_params)
+            pp.pprint(settings)

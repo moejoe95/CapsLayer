@@ -26,8 +26,9 @@ def selfAttention(x, ch, name='attention'):
 
         shape = cl.shape(x)
         o = tf.reshape(o, shape=shape) # [bs, h, w, C]
-        
-        o = tf.layers.conv2d(o, channels, kernel_size=1, strides=1)
+
+        # check this out: SACN doesn't use this 1x1 conv, but SAGAN does
+        o = tf.layers.conv2d(o, ch, kernel_size=1, strides=1)
 
         x = gamma * o + x
 

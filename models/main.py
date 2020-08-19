@@ -36,6 +36,7 @@ def save_to(is_training):
         loss = os.path.join(cfg.results_dir, 'loss.csv')
         train_acc = os.path.join(cfg.results_dir, 'train_acc.csv')
         val_acc = os.path.join(cfg.results_dir, 'val_acc.csv')
+        t_score = os.path.join(cfg.results_dir, 't_score.csv')
 
         if os.path.exists(val_acc):
             os.remove(val_acc)
@@ -43,6 +44,8 @@ def save_to(is_training):
             os.remove(loss)
         if os.path.exists(train_acc):
             os.remove(train_acc)
+        if os.path.exists(t_score):
+            os.remove(t_score)
 
         fd_train_acc = open(train_acc, 'w')
         fd_train_acc.write('step,train_acc\n')
@@ -50,9 +53,12 @@ def save_to(is_training):
         fd_loss.write('step,loss\n')
         fd_val_acc = open(val_acc, 'w')
         fd_val_acc.write('step,val_acc\n')
+        fd_t_score = open(t_score, 'w')
+        fd_t_score.write('step, T\n')
         fd = {"train_acc": fd_train_acc,
               "loss": fd_loss,
-              "val_acc": fd_val_acc}
+              "val_acc": fd_val_acc,
+              "t_score": fd_t_score}
     else:
         test_acc = os.path.join(cfg.results_dir, 'test_acc.csv')
         if os.path.exists(test_acc):
@@ -121,6 +127,8 @@ def train(model, data_loader):
                 fd["loss"].flush()
                 fd["train_acc"].write("{:d},{:.4f}\n".format(step, train_acc))
                 fd["train_acc"].flush()
+                fd["t_score"].write("{:d},{:.4f}\n".format(step, T))
+                fd["t_score"].flush()
             else:
                 _, loss_val, T = sess.run([train_ops, loss, model.T], feed_dict={data_loader.handle: training_handle})
                 # assert not np.isnan(loss_val), 'Something wrong! loss is nan...'

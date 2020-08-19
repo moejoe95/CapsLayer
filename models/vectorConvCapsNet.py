@@ -91,6 +91,7 @@ class CapsNet(object):
             "routing_method": self.routing_method
         }
 
+        '''
         self.conv_caps2_params = {
             "filters": 32,
             "kernel_size": 3,
@@ -99,7 +100,8 @@ class CapsNet(object):
             "num_iter": self.num_iter,
             "routing_method": self.routing_method
         }
-
+        '''
+        
         self.fc_caps_params = {
             "num_outputs": self.num_label,
             "out_caps_dims": [16, 1],
@@ -245,5 +247,6 @@ class CapsNet(object):
             settings.pop('labels_one_hoted')
             settings.pop('accuracy')
 
+            # print model parameters
             pp = pprint.PrettyPrinter(indent=2, stream=fd_params)
             pp.pprint(settings)

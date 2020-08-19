@@ -21,6 +21,7 @@ from . import mnist
 from . import fashion_mnist
 from . import cifar10
 from . import cifar100
+from . import imagenette
 
 
-__all__ = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100']
+__all__ = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'small-norb', 'imagenette']

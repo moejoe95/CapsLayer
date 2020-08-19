@@ -10,6 +10,6 @@ model*/results*
 results*
 build/
 .vscode*
-data/
+data
 env/
 *.txt

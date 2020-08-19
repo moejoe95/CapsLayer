@@ -105,10 +105,11 @@ def train(model, data_loader):
         for step in range(1, cfg.num_steps):
             start_time = time.time()
             if step % cfg.train_sum_every == 0:
-                _, loss_val, train_acc, summary_str = sess.run([train_ops,
+                _, loss_val, train_acc, summary_str, T = sess.run([train_ops,
                                                                loss,
                                                                model.accuracy,
-                                                               summary_ops],
+                                                               summary_ops,
+                                                               model.T],
                                                                feed_dict={data_loader.handle: training_handle})
                 tl = timeline.Timeline(run_metadata.step_stats)
                 ctf = tl.generate_chrome_trace_format()
@@ -121,7 +122,7 @@ def train(model, data_loader):
                 fd["train_acc"].write("{:d},{:.4f}\n".format(step, train_acc))
                 fd["train_acc"].flush()
             else:
-                _, loss_val = sess.run([train_ops, loss], feed_dict={data_loader.handle: training_handle})
+                _, loss_val, T = sess.run([train_ops, loss, model.T], feed_dict={data_loader.handle: training_handle})
                 # assert not np.isnan(loss_val), 'Something wrong! loss is nan...'
 
             if step % cfg.val_sum_every == 0:
@@ -153,8 +154,8 @@ def train(model, data_loader):
                            global_step=step)
 
             duration = time.time() - start_time
-            log_str = ' step: {:d}, loss: {:.3f}, time: {:.3f} sec/step' \
-                      .format(step, loss_val, duration)
+            log_str = ' step: {:d}, loss: {:.3f}, time: {:.3f} sec/step, T: {:.3f}' \
+                      .format(step, loss_val, duration, T)
             print(log_str)
 
 

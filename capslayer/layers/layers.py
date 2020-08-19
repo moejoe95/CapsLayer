@@ -85,6 +85,7 @@ def dense(inputs, activation,
 
         if routing_method == 'SDARouting':
             activation = tf.norm(inputs, axis=(-2, -1))
+            return routing(vote, activation, routing_method)
 
         pose, activation = routing(vote, activation, routing_method)
         # pose, activation = cl.core.gluing(vote, activation)

@@ -57,7 +57,7 @@ def routing(votes,
             pose, activation = dynamicRouting(votes, num_iter, leaky=True)
             # pose, activation = dynamicRouting_v1(votes, num_iter, leaky=True)
         elif method == 'SDARouting':
-            pose, activation = SDARouting(votes, activation, num_iter)
+            return SDARouting(votes, activation, num_iter)
         else:
             raise Exception('Invalid routing method!', method)
 
@@ -164,7 +164,7 @@ def SDARouting(votes, act_norm, num_routing):
     # get probability by calculating norm
     probs = tf.norm(pose, axis=[-2, -1])
 
-    return pose, probs
+    return pose, probs, route
 
 
 def get_t_factor(d, out_capsules):

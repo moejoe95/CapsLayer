@@ -129,7 +129,7 @@ class CapsNet(object):
                                                 name="PrimaryCaps_layer")
 
         # 1st convolutional capsule layer
-        pose_conv, activation_conv = cl.layers.conv2d(pose_conv,
+        pose_conv, activation_conv, c_1 = cl.layers.conv2d(pose_conv,
                                                 activation_conv,
                                                 **self.conv_caps1_params,
                                                 name="ConvCaps_layer1")
@@ -148,9 +148,12 @@ class CapsNet(object):
             pose_conv = tf.reshape(pose_conv, shape=[-1, num_inputs, self.vec_shape[0], self.vec_shape[1]])
             activation_conv = tf.reshape(activation_conv, shape=[-1, num_inputs])
 
-            self.poses, self.probs = cl.layers.dense(pose_conv,
+            self.poses, self.probs, c_2 = cl.layers.dense(pose_conv,
                                                      activation_conv,
                                                      **self.fc_caps_params)
+
+        with tf.variable_scope('t_score'):
+            self.T = (cl.ops.t_score(c_1) + cl.ops.t_score(c_2)) / 2                                      
 
         # reconstruction network
         if self.decoder == 'FC':
@@ -246,6 +249,7 @@ class CapsNet(object):
             settings.pop('recon_imgs')
             settings.pop('labels_one_hoted')
             settings.pop('accuracy')
+            settings.pop('T')
 
             # print model parameters
             pp = pprint.PrettyPrinter(indent=2, stream=fd_params)

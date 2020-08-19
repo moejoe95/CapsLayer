@@ -101,6 +101,8 @@ def conv2d(inputs,
 
         if routing_method == 'SDARouting':
             activation = tf.norm(batched, axis=(-2, -1))
+            pose, activation, c_ij = routing(vote, activation, method=routing_method, num_iter=num_iter)
+            return pose, activation, c_ij
             
         # 3. routing
         pose, activation = routing(vote, activation, method=routing_method, num_iter=num_iter)

@@ -30,10 +30,10 @@ flags.DEFINE_float('regularization_scale', 0.392, 'regularization coefficient fo
 ############################
 #   environment setting    #
 ############################
-flags.DEFINE_string('model', 'vectorConvCapsNet',
-                    'The model to use. Default: vectorConvCapsNet')
+flags.DEFINE_string('model', 'capsNet_small',
+                    'The model to use. Default: capsNet_small')
 
-supported_datasets = ["mnist", "fashion_mnist", "cifar10", "cifar100", "small-norb", "celeba"]
+supported_datasets = ["mnist", "fashion_mnist", "cifar10", "cifar100", "small-norb", "imagenette"]
 flags.DEFINE_string('dataset', 'fashion_mnist',
                     'The name of dataset, one of [' + ", ".join(supported_datasets) + ']. Default: fashion_mnist')
 

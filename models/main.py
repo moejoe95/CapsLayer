@@ -82,7 +82,7 @@ def train(model, data_loader):
     saver = tf.train.Saver(var_list=tf.trainable_variables(), max_to_keep=10)
 
     # Setting up training session
-    run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+    #run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
     run_metadata = tf.RunMetadata()
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -203,7 +203,7 @@ def evaluate(model, data_loader):
 
 def main(_):
 
-    model_list = ['baseline', 'vectorCapsNet', 'matrixCapsNet', 'vectorConvCapsNet']
+    model_list = ['baseline', 'vectorCapsNet', 'matrixCapsNet', 'capsNet_small', 'capsNet_big']
 
     # Deciding which model to use
     if cfg.model == 'baseline':
@@ -232,8 +232,8 @@ def main(_):
         num_label = 10
     elif cfg.dataset == 'small_norb':
         num_label = 5
-        height = 96
-        width = 96
+        height = 32
+        width = 32
         channels = 1
     elif cfg.dataset == 'imagenette':
         num_label = 10

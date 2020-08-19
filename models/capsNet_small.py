@@ -31,7 +31,7 @@ from config import cfg
 class CapsNet(object):
     def __init__(self, height=28, width=28, channels=1, num_label=10):
         '''
-
+        CapsNet architecture for datasets like mnist or fashion mnist.
         Args:
             height: Integer, the height of inputs.
             width: Integer, the width of inputs.

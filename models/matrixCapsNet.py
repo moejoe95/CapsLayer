@@ -48,8 +48,10 @@ class CapsNet(object):
             poses: Tensor with shape [batch_size, num_label, 16, 1].
             probs: Tensor with shape [batch_size, num_label], the probability of entity presence.
         """
+
         self.raw_imgs = inputs
         self.labels = labels
+
         probs = []
         inputs = tf.reshape(inputs, shape=[-1, self.height, self.width, self.channels])
         conv1 = tf.layers.conv2d(inputs,
@@ -137,6 +139,11 @@ class CapsNet(object):
             correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
             self.accuracy = tf.reduce_mean(correct / tf.cast(tf.shape(self.probs)[0], tf.float32))
             cl.summary.scalar('accuracy', self.accuracy, verbose=cfg.summary_verbose)
+
+        
+        # TODO to implement
+        self.T = tf.constant(0.0, dtype=tf.float32, shape = ())
+        self.D = tf.constant(0.0, dtype=tf.float32, shape = ())
 
         return self.poses, self.probs
 

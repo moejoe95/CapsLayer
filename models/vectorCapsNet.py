@@ -52,6 +52,7 @@ class CapsNet(object):
         """
         self.raw_imgs = inputs
         self.labels = labels
+
         with tf.variable_scope('Conv1_layer'):
             # Conv1, return with shape [batch_size, 20, 20, 256]
             inputs = tf.reshape(self.raw_imgs, shape=[-1, self.height, self.width, self.channels])
@@ -71,7 +72,7 @@ class CapsNet(object):
                                                             method="norm")
 
         with tf.variable_scope('DigitCaps_layer'):
-            routing_method = "SDARouting"
+            routing_method = "DynamicRouting"
             num_inputs = np.prod(cl.shape(primaryCaps)[1:4])
             primaryCaps = tf.reshape(primaryCaps, shape=[-1, num_inputs, 8, 1])
             activation = tf.reshape(activation, shape=[-1, num_inputs])
@@ -113,6 +114,10 @@ class CapsNet(object):
             correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
             self.accuracy = tf.reduce_mean(correct / tf.cast(tf.shape(self.probs)[0], tf.float32))
             cl.summary.scalar('accuracy', self.accuracy, verbose=cfg.summary_verbose)
+
+        # TODO to implement
+        self.T = tf.constant(0.0, dtype=tf.float32, shape = ())
+        self.D = tf.constant(0.0, dtype=tf.float32, shape = ())
 
         return self.poses, self.probs
 

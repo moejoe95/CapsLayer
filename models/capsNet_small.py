@@ -66,6 +66,7 @@ class CapsNet(object):
         self.routing_method = 'SDARouting'
         self.vec_shape = [8, 1]
         self.decoder = 'DECONV'
+        self.residual = True
         self.attention = True
         self.num_iter = 3
 
@@ -110,12 +111,14 @@ class CapsNet(object):
 
         inputs = tf.reshape(self.raw_imgs, shape=[-1, self.height, self.width, self.channels])
 
-        # first convolutional layer
-        conv1 = tf.layers.conv2d(inputs,
-                                 **self.conv1_params,
-                                 padding='VALID',
-                                 activation=tf.nn.relu,
-                                 name="Conv1_layer")
+        if self.residual:
+            conv1 = cl.layers.residualConvs(inputs, self.conv1_params)
+        else:
+            conv1 = tf.layers.conv2d(inputs,
+                                    **self.conv1_params,
+                                    padding='VALID',
+                                    activation=tf.nn.relu,
+                                    name="Conv1_layer")
 
         # idea of attention in CapsNet is from Hoogi et al. 
         # in the paper 'Self-Attention Capsule Networks for Image Classification'
@@ -212,12 +215,15 @@ class CapsNet(object):
             reconstruction_err = tf.reduce_mean(squared)
             cl.summary.scalar('reconstruction_loss', reconstruction_err, verbose=cfg.summary_verbose)
 
+            # 3. T/D loss
+            #t_d_loss = (1 - self.T)  * 0.05
+
             # 3. Total loss
             # The paper uses sum of squared error as reconstruction error, but we
             # have used reduce_mean in `# 2 The reconstruction loss` to calculate
             # mean squared error. In order to keep in line with the paper,the
             # regularization scale should be 0.0005*784=0.392
-            total_loss = margin_loss + cfg.regularization_scale * reconstruction_err
+            total_loss = margin_loss + cfg.regularization_scale * reconstruction_err #+ t_d_loss
 
             cl.summary.scalar('total_loss', total_loss, verbose=cfg.summary_verbose)
             return total_loss
@@ -238,6 +244,8 @@ class CapsNet(object):
         with open(params, 'wt') as fd_params:
 
             fd_params.write(cfg.model + ' at ' + str(datetime.datetime.now()) + '\n\n')
+
+            fd_params.write('dataset: ' + cfg.dataset + '\n\n')
 
             # get all class variables
             settings = self.__dict__.copy()

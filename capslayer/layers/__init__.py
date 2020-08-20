@@ -24,5 +24,6 @@ from capslayer.layers.layers import primaryCaps
 from capslayer.layers.attention import selfAttention
 from capslayer.layers.layers import dense
 from capslayer.layers.layers import dense as fully_connected
+from capslayer.layers.residual_conv2d import residualConvs
 
-__all__ = ['conv1d', 'conv2d', 'conv3d', 'selfAttention', 'primaryCaps', 'dense', 'fully_connected']
+__all__ = ['conv1d', 'conv2d', 'conv3d', 'selfAttention', 'primaryCaps', 'dense', 'fully_connected', 'residualConvs']

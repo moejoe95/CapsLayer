@@ -37,4 +37,3 @@ def d_score(v_j):
     v_j_norm = tf.norm(v_j, axis=-1)
     v_j_std = tf.math.reduce_std(v_j_norm, axis=0)   # Note: Calc std along the batch dimension
     return tf.reduce_max(v_j_std)    
-

@@ -20,5 +20,6 @@ from __future__ import print_function
 from .losses import losses
 from .ops import squash
 from .gamma_ops import t_score
+from .gamma_ops import d_score
 
-__all__ = ['losses', 'squash', 't_score']
+__all__ = ['losses', 'squash', 't_score', 'd_score']

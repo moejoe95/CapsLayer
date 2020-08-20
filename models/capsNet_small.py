@@ -152,8 +152,9 @@ class CapsNet(object):
                                                      activation_conv,
                                                      **self.fc_caps_params)
 
-        with tf.variable_scope('t_score'):
+        with tf.variable_scope('gamma_metrics'):
             self.T = (cl.ops.t_score(c_1) + cl.ops.t_score(c_2)) / 2                                      
+            self.D = cl.ops.d_score(activation_conv)
 
         # reconstruction network
         if self.decoder == 'FC':
@@ -250,7 +251,8 @@ class CapsNet(object):
             settings.pop('labels_one_hoted')
             settings.pop('accuracy')
             settings.pop('T')
-
+            settings.pop('D')
+            
             # print model parameters
             pp = pprint.PrettyPrinter(indent=2, stream=fd_params)
             pp.pprint(settings)

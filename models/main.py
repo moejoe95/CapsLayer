@@ -28,37 +28,36 @@ from capslayer.plotlib import plot_activation
 from config import cfg
 
 
+def get_file_descriptors(filenames):
+    fds = {}
+    for filename in filenames:
+        file_path = os.path.join(cfg.results_dir, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        fd = open(file_path, 'w')
+        fd.write('step,'+ filename +'\n')
+        fds[filename] = fd
+    return fds
+
+
+def fd_write_log(fds, step, values):
+    i = 0
+    for filename in fds:
+        if filename == 'val_acc.csv':
+            continue
+        fds[filename].write("{:d},{:.4f}\n".format(step, values[i]))
+        fds[filename].flush()
+        i += 1
+
+
 def save_to(is_training):
     os.makedirs(os.path.join(cfg.results_dir, "activations"), exist_ok=True)
     os.makedirs(os.path.join(cfg.results_dir, "timelines"), exist_ok=True)
 
     if is_training:
-        loss = os.path.join(cfg.results_dir, 'loss.csv')
-        train_acc = os.path.join(cfg.results_dir, 'train_acc.csv')
-        val_acc = os.path.join(cfg.results_dir, 'val_acc.csv')
-        t_score = os.path.join(cfg.results_dir, 't_score.csv')
+        log_files = ['loss.csv', 'train_acc.csv', 'val_acc.csv', 't_score.csv', 'd_score.csv']
+        fd = get_file_descriptors(log_files)
 
-        if os.path.exists(val_acc):
-            os.remove(val_acc)
-        if os.path.exists(loss):
-            os.remove(loss)
-        if os.path.exists(train_acc):
-            os.remove(train_acc)
-        if os.path.exists(t_score):
-            os.remove(t_score)
-
-        fd_train_acc = open(train_acc, 'w')
-        fd_train_acc.write('step,train_acc\n')
-        fd_loss = open(loss, 'w')
-        fd_loss.write('step,loss\n')
-        fd_val_acc = open(val_acc, 'w')
-        fd_val_acc.write('step,val_acc\n')
-        fd_t_score = open(t_score, 'w')
-        fd_t_score.write('step, T\n')
-        fd = {"train_acc": fd_train_acc,
-              "loss": fd_loss,
-              "val_acc": fd_val_acc,
-              "t_score": fd_t_score}
     else:
         test_acc = os.path.join(cfg.results_dir, 'test_acc.csv')
         if os.path.exists(test_acc):
@@ -67,7 +66,7 @@ def save_to(is_training):
         fd_test_acc.write('test_acc\n')
         fd = {"test_acc": fd_test_acc}
 
-    return(fd)
+    return fd
 
 
 def train(model, data_loader):
@@ -111,11 +110,12 @@ def train(model, data_loader):
         for step in range(1, cfg.num_steps):
             start_time = time.time()
             if step % cfg.train_sum_every == 0:
-                _, loss_val, train_acc, summary_str, T = sess.run([train_ops,
+                _, loss_val, train_acc, summary_str, T, D = sess.run([train_ops,
                                                                loss,
                                                                model.accuracy,
                                                                summary_ops,
-                                                               model.T],
+                                                               model.T,
+                                                               model.D],
                                                                feed_dict={data_loader.handle: training_handle})
                 tl = timeline.Timeline(run_metadata.step_stats)
                 ctf = tl.generate_chrome_trace_format()
@@ -123,14 +123,9 @@ def train(model, data_loader):
                 with open(out_path, "w") as f:
                     f.write(ctf)
                 summary_writer.add_summary(summary_str, step)
-                fd["loss"].write("{:d},{:.4f}\n".format(step, loss_val))
-                fd["loss"].flush()
-                fd["train_acc"].write("{:d},{:.4f}\n".format(step, train_acc))
-                fd["train_acc"].flush()
-                fd["t_score"].write("{:d},{:.4f}\n".format(step, T))
-                fd["t_score"].flush()
+                fd_write_log(fd, step, [loss_val, train_acc, T, D])
             else:
-                _, loss_val, T = sess.run([train_ops, loss, model.T], feed_dict={data_loader.handle: training_handle})
+                _, loss_val, T, D = sess.run([train_ops, loss, model.T, model.D], feed_dict={data_loader.handle: training_handle})
                 # assert not np.isnan(loss_val), 'Something wrong! loss is nan...'
 
             if step % cfg.val_sum_every == 0:
@@ -154,16 +149,16 @@ def train(model, data_loader):
                 avg_acc = total_acc / n
                 path = os.path.join(os.path.join(cfg.results_dir, "activations"))
                 plot_activation(np.hstack((probs, targets)), step=step, save_to=path)
-                fd["val_acc"].write("{:d},{:.4f}\n".format(step, avg_acc))
-                fd["val_acc"].flush()
+                fd['val_acc.csv'].write("{:d},{:.4f}\n".format(step, avg_acc))
+                fd['val_acc.csv'].flush()
             if step % cfg.save_ckpt_every == 0:
                 saver.save(sess,
                            save_path=os.path.join(cfg.logdir, 'model.ckpt'),
                            global_step=step)
 
             duration = time.time() - start_time
-            log_str = ' step: {:d}, loss: {:.3f}, time: {:.3f} sec/step, T: {:.3f}' \
-                      .format(step, loss_val, duration, T)
+            log_str = ' step: {:d}, loss: {:.3f}, time: {:.3f} sec/step, T: {:.3f}, D: {:.3f}' \
+                      .format(step, loss_val, duration, T, D)
             print(log_str)
 
 

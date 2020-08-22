@@ -84,7 +84,7 @@ def train(model, data_loader):
     fd = save_to()
     summary_writer = tf.summary.FileWriter(cfg.logdir)
     summary_writer.add_graph(tf.get_default_graph())
-    saver = tf.train.Saver(var_list=tf.trainable_variables(), max_to_keep=10)
+    saver = tf.train.Saver(max_to_keep=3)
 
     # Setting up training session
     #run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
@@ -249,7 +249,6 @@ def main(_):
     net = model(height=height, width=width, channels=channels, num_label=num_label)
 
     # Deciding to train or evaluate model
-    print(cfg.is_training)
     if cfg.is_training:
         train(net, data_loader)
     else:

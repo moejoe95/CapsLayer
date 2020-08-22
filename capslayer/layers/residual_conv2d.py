@@ -15,7 +15,7 @@ def residualConvs(inputs,
                             **conv_params,
                             padding='SAME',
                             name="res_conv1_layer")
-    conv1_batched = tf.keras.layers.BatchNormalization()(conv1, training=cfg.is_training)
+    conv1_batched = tf.keras.layers.BatchNormalization(name='batch_norm_1')(conv1, training=cfg.is_training)
     conv1_act = tf.nn.relu(conv1_batched)
 
     # conv2
@@ -23,7 +23,7 @@ def residualConvs(inputs,
                             **conv_params,
                             padding='SAME',
                             name="res_conv2_layer")
-    conv2_batched = tf.keras.layers.BatchNormalization()(conv2, training=cfg.is_training)
+    conv2_batched = tf.keras.layers.BatchNormalization(name='batch_norm_2')(conv2, training=cfg.is_training)
     conv2_act = tf.nn.relu(conv2_batched)
 
     # conv3
@@ -31,7 +31,7 @@ def residualConvs(inputs,
                             **conv_params,
                             padding='SAME',
                             name="res_conv3_layer")
-    conv3_batched = tf.keras.layers.BatchNormalization()(conv3, training=cfg.is_training)
+    conv3_batched = tf.keras.layers.BatchNormalization(name='batch_norm_3')(conv3, training=cfg.is_training)
     
     # first residual connection
     conv3 = tf.keras.layers.Add()([conv1_batched, conv3_batched])
@@ -42,7 +42,7 @@ def residualConvs(inputs,
                             **conv_params,
                             padding='SAME',
                             name="res_conv4_layer")
-    conv4_batched = tf.keras.layers.BatchNormalization()(conv4, training=cfg.is_training)
+    conv4_batched = tf.keras.layers.BatchNormalization(name='batch_norm_4')(conv4, training=cfg.is_training)
     conv4_act = tf.nn.relu(conv4_batched)
 
     # conv5
@@ -50,7 +50,7 @@ def residualConvs(inputs,
                             **conv_params,
                             padding='SAME',
                             name="res_conv5_layer")
-    conv5_batched = tf.keras.layers.BatchNormalization()(conv5, training=cfg.is_training)
+    conv5_batched = tf.keras.layers.BatchNormalization(name='batch_norm_5')(conv5, training=cfg.is_training)
     conv5_act = tf.nn.relu(conv5_batched)
 
     # conv6
@@ -58,7 +58,7 @@ def residualConvs(inputs,
                             **conv_params,
                             padding='VALID',
                             name="res_conv6_layer")
-    conv6_batched = tf.keras.layers.BatchNormalization()(conv6, training=cfg.is_training)
+    conv6_batched = tf.keras.layers.BatchNormalization(name='batch_norm_6')(conv6, training=cfg.is_training)
 
     # resize conv4 to size of conv6 by convolution
     conv4 = tf.layers.conv2d(conv4_batched,

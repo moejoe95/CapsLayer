@@ -50,11 +50,11 @@ def fd_write_log(fds, step, values):
         i += 1
 
 
-def save_to(is_training):
+def save_to():
     os.makedirs(os.path.join(cfg.results_dir, "activations"), exist_ok=True)
     os.makedirs(os.path.join(cfg.results_dir, "timelines"), exist_ok=True)
 
-    if is_training:
+    if cfg.is_training:
         log_files = ['loss.csv', 'train_acc.csv', 'val_acc.csv', 't_score.csv', 'd_score.csv']
         fd = get_file_descriptors(log_files)
 
@@ -81,7 +81,7 @@ def train(model, data_loader):
     loss, train_ops, summary_ops = model.train(cfg.num_gpus)
 
     # Creating files, saver and summary writer to save training results
-    fd = save_to(is_training=True)
+    fd = save_to()
     summary_writer = tf.summary.FileWriter(cfg.logdir)
     summary_writer.add_graph(tf.get_default_graph())
     saver = tf.train.Saver(var_list=tf.trainable_variables(), max_to_keep=10)
@@ -170,7 +170,7 @@ def evaluate(model, data_loader):
     model.create_network(inputs, labels)
 
     # Create files to save evaluating results
-    fd = save_to(is_training=False)
+    fd = save_to()
     saver = tf.train.Saver()
 
     config = tf.ConfigProto(allow_soft_placement=True)
@@ -249,6 +249,7 @@ def main(_):
     net = model(height=height, width=width, channels=channels, num_label=num_label)
 
     # Deciding to train or evaluate model
+    print(cfg.is_training)
     if cfg.is_training:
         train(net, data_loader)
     else:

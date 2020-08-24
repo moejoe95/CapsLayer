@@ -33,6 +33,7 @@ def dense(inputs, activation,
           num_outputs,
           out_caps_dims,
           routing_method='EMRouting',
+          num_iter=3,
           coordinate_addition=False,
           reuse=None,
           name=None):
@@ -87,7 +88,7 @@ def dense(inputs, activation,
             activation = tf.norm(inputs, axis=(-2, -1))
             return routing(vote, activation, routing_method)
 
-        pose, activation = routing(vote, activation, routing_method)
+        pose, activation = routing(vote, activation, routing_method, num_iter=num_iter)
         # pose, activation = cl.core.gluing(vote, activation)
         assert len(pose.shape) == 4
         assert len(activation.shape) == 2

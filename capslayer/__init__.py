@@ -21,7 +21,7 @@ from capslayer.ops.ops import shape
 
 _allowed_symbols = [
     'layers',
-    'decoders'
+    'decoders',
     'datasets',
     'distributions',
     'losses',

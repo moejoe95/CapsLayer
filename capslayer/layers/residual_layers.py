@@ -3,13 +3,15 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-
+import capslayer as cl
 from config import cfg
 
 def residualConvs(inputs, 
                 conv_params,
-                name="res_conv_layers"):
-
+                padding='SAME'):
+    '''
+    Subnetwork with 7 convolutional layers + batch normalization + 2 residual connections.
+    '''
     # conv1
     conv1 = tf.layers.conv2d(inputs,
                             **conv_params,
@@ -68,5 +70,33 @@ def residualConvs(inputs,
 
     # second residal connection
     conv6 = tf.keras.layers.Add()([conv4, conv6_batched])
-    return tf.nn.relu(conv6)                               
+    return tf.nn.relu(conv6)         
+
+
+def getParamsSkip(skip_params, previous_params):
+    return {
+        "filters": previous_params['filters'],
+        "kernel_size": skip_params['kernel_size'] - previous_params['kernel_size'] + 1,
+        "strides": 1,
+        "out_caps_dims": previous_params['out_caps_dims'],
+        "num_iter": previous_params['num_iter'],
+        "routing_method": previous_params['routing_method']
+    }
+
+
+def capsResidual(res_pose, res_activation, previous_pose, previous_activation, skip_params):
+    """
+    Adds skip connection to output of previous caps layer and performs relu activation.
+    """
+    skip_pose, skip_activation, _ = cl.layers.conv2d(res_pose,
+                                        res_activation,
+                                        **skip_params,
+                                        name="ConvCaps_layer_skip")
+
+    pose_add = tf.keras.layers.Add()([previous_pose, skip_pose])
+    pose_add = tf.nn.relu(pose_add)
+    activation_add = tf.keras.layers.Add()([previous_activation, skip_activation])
+    activation_add = tf.nn.relu(activation_add)
+
+    return pose_add, activation_add
         

@@ -30,7 +30,7 @@ def conv2d(inputs,
            out_caps_dims,
            kernel_size,
            strides,
-           padding="valid",
+           padding="VALID",
            routing_method="EMRouting",
            name=None,
            reuse=None,
@@ -90,8 +90,8 @@ def conv2d(inputs,
         # 1. space to batch
         # patching everything into [batch_size, out_height, out_width, in_channels] + in_caps_dims (batched)
         # and [batch_size, out_height, out_width, in_channels] (activation).
-        batched = cl.space_to_batch_nd(inputs, kernel_size, strides)
-        activation = cl.space_to_batch_nd(activation, kernel_size, strides)
+        batched = cl.space_to_batch_nd(inputs, kernel_size, strides, padding=padding)
+        activation = cl.space_to_batch_nd(activation, kernel_size, strides, padding=padding)
 
         # 2. transforming
         # transforming to [batch_size, out_height, out_width, in_channels, out_channels/filters] + out_caps_dims
@@ -116,7 +116,7 @@ def conv3d(inputs,
            out_caps_dims,
            kernel_size,
            strides,
-           padding="valid",
+           padding="VALID",
            routing_method="EMRouting",
            name=None,
            reuse=None):
@@ -169,8 +169,8 @@ def conv3d(inputs,
             out_caps_dims = list(out_caps_dims)
 
         # 1. space to batch
-        batched = cl.space_to_batch_nd(inputs, kernel_size, strides)
-        activation = cl.space_to_batch_nd(activation, kernel_size, strides)
+        batched = cl.space_to_batch_nd(inputs, kernel_size, strides, padding=padding)
+        activation = cl.space_to_batch_nd(activation, kernel_size, strides, padding=padding)
 
         # 2. transforming
         vote = transforming(batched,

@@ -45,9 +45,8 @@ class Model(object):
         pool3 = tf.nn.max_pool(conv3, ksize=[1, 3, 3, 1], strides=[1, 1, 1, 1], padding="SAME")
 
         input = tf.reshape(pool3, shape=(-1, np.prod(pool3.get_shape()[1:])))
-        fc1 = tf.layers.dense(input, units=328)
-        fc2 = tf.layers.dense(fc1, units=192)
-        out = tf.layers.dense(fc2, units=self.num_label, activation=None)
+        fc1 = tf.layers.dense(input, units=100)
+        out = tf.layers.dense(fc1, units=self.num_label, activation=None)
         self.y_pred = out
         self.probs = tf.nn.softmax(self.y_pred, axis=1)
 
@@ -57,6 +56,12 @@ class Model(object):
             correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
             self.accuracy = tf.reduce_mean(correct / tf.cast(tf.shape(self.probs)[0], tf.float32))
             cl.summary.scalar('accuracy', self.accuracy, verbose=cfg.summary_verbose)
+
+        # TODO to implement
+        self.T = tf.constant(0.0, dtype=tf.float32, shape = ())
+        self.D = tf.constant(0.0, dtype=tf.float32, shape = ())
+
+        print('num params:', np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
 
     def _loss(self):
         return tf.losses.softmax_cross_entropy(self.y, self.y_pred)

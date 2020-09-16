@@ -66,34 +66,25 @@ class CapsNet(object):
         self.routing_method = 'SDARouting'
         self.vec_shape = [8, 1]
         self.decoder = 'DECONV'
-        self.residual = True
+        self.residual = False
+        self.residual_padding = 'SAME'
         self.attention = True
         self.num_iter = 3
 
         self.conv1_params = {
-            "filters": 256,
+            "filters": 64,
             "kernel_size": 9,
             "strides": 1
         }
 
         self.prim_caps_params = {
             "filters": 32,
-            "kernel_size": 9,
+            "kernel_size": 7,
             "strides": 2,
             "out_caps_dims": self.vec_shape
         }
 
         self.conv_caps1_params = {
-            "filters": 32,
-            "kernel_size": 5,
-            "strides": 1,
-            "out_caps_dims": self.vec_shape,
-            "num_iter": self.num_iter,
-            "routing_method": self.routing_method
-        }
-
-        '''
-        self.conv_caps2_params = {
             "filters": 32,
             "kernel_size": 3,
             "strides": 1,
@@ -101,18 +92,28 @@ class CapsNet(object):
             "num_iter": self.num_iter,
             "routing_method": self.routing_method
         }
-        '''
+
+        self.conv_caps2_params = {
+            "filters": 32,
+            "kernel_size": 3,
+            "strides": 1,
+            "out_caps_dims": self.vec_shape,
+            "num_iter": self.num_iter,
+            "routing_method": self.routing_method,
+            "padding": 'SAME'
+        }
         
         self.fc_caps_params = {
             "num_outputs": self.num_label,
             "out_caps_dims": [16, 1],
-            "routing_method": self.routing_method
+            "routing_method": self.routing_method,
+            "coordinate_addition": False
         }
 
         inputs = tf.reshape(self.raw_imgs, shape=[-1, self.height, self.width, self.channels])
 
         if self.residual:
-            conv1 = cl.layers.residualConvs(inputs, self.conv1_params)
+            conv1 = cl.layers.residualConvs(inputs, self.conv1_params, padding=self.residual_padding)
         else:
             conv1 = tf.layers.conv2d(inputs,
                                     **self.conv1_params,
@@ -126,24 +127,22 @@ class CapsNet(object):
             conv1 = cl.layers.selfAttention(conv1, self.conv1_params['filters'])
 
         # primary caps layer
-        pose_conv, activation_conv = cl.layers.primaryCaps(conv1,
+        pose_prim, activation_prim = cl.layers.primaryCaps(conv1,
                                                 **self.prim_caps_params,
                                                 method="norm",
                                                 name="PrimaryCaps_layer")
 
         # 1st convolutional capsule layer
-        pose_conv, activation_conv, c_1 = cl.layers.conv2d(pose_conv,
-                                                activation_conv,
+        pose_conv, activation_conv, c_1 = cl.layers.conv2d(pose_prim,
+                                                activation_prim,
                                                 **self.conv_caps1_params,
                                                 name="ConvCaps_layer1")
 
         # 2nd convolutional capsule layer
-        '''
-        pose_conv, activation_conv = cl.layers.conv2d(pose_conv,
+        pose_conv, activation_conv, c_1 = cl.layers.conv2d(pose_conv,
                                                 activation_conv,
                                                 **self.conv_caps2_params,
                                                 name="ConvCaps_layer2")
-        '''
 
         # fully connected capsule layer
         with tf.variable_scope('FullyConnCaps_layer'):
@@ -154,6 +153,7 @@ class CapsNet(object):
             self.poses, self.probs, c_2 = cl.layers.dense(pose_conv,
                                                      activation_conv,
                                                      **self.fc_caps_params)
+        
 
         with tf.variable_scope('gamma_metrics'):
             self.T = (cl.ops.t_score(c_1) + cl.ops.t_score(c_2)) / 2                                      
@@ -184,7 +184,7 @@ class CapsNet(object):
         self.calculate_accuracy()
 
         # count number of trainable parameters
-        self.num_params = np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
+        self.num_train_params = np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
 
         # log parameters into file params.conf
         self.log_params()
@@ -245,7 +245,8 @@ class CapsNet(object):
 
             fd_params.write(cfg.model + ' at ' + str(datetime.datetime.now()) + '\n\n')
 
-            fd_params.write('dataset: ' + cfg.dataset + '\n\n')
+            fd_params.write('dataset: ' + cfg.dataset + '\n')
+            fd_params.write('batch_size: ' + str(cfg.batch_size) + '\n\n')
 
             # get all class variables
             settings = self.__dict__.copy()

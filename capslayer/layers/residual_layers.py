@@ -16,7 +16,7 @@ def residualConvs(inputs,
 
     # define parameters for residual shortcuts
     conv_shortcut_params = {
-                "filters": 128,
+                "filters": conv_params['filters'],
                 "kernel_size": -1,
                 "strides": 1
         }

@@ -207,7 +207,7 @@ def evaluate(model, data_loader):
 
 def main(_):
 
-    model_list = ['baseline', 'vectorCapsNet', 'matrixCapsNet', 'capsNet_small', 'capsNet_big']
+    model_list = ['baseline', 'vectorCapsNet', 'matrixCapsNet', 'ResCaps', 'capsNet_big']
 
     # Deciding which model to use
     if cfg.model == 'baseline':

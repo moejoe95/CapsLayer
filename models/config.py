@@ -17,8 +17,8 @@ flags.DEFINE_float('m_scheduler', 1, '.')
 flags.DEFINE_float('lambda_val', 0.5, 'down weight of the loss for absent digit classes')
 
 # for training
-flags.DEFINE_integer('batch_size', 32, 'batch size')
-flags.DEFINE_integer('num_steps', 30000, 'The number of training steps, default: 30,000')
+flags.DEFINE_integer('batch_size', 16, 'batch size')
+flags.DEFINE_integer('num_steps', 100000, 'The number of training steps, default: 30,000')
 flags.DEFINE_integer('iter_routing', 3, 'number of iterations in routing algorithm')
 flags.DEFINE_integer('train_sum_every', 500, 'the frequency of saving train summary(step)')
 flags.DEFINE_integer('val_sum_every', 500, 'the frequency of saving valuation summary(step)')
@@ -30,8 +30,8 @@ flags.DEFINE_float('regularization_scale', 0.392, 'regularization coefficient fo
 ############################
 #   environment setting    #
 ############################
-flags.DEFINE_string('model', 'capsNet_small',
-                    'The model to use. Default: capsNet_small')
+flags.DEFINE_string('model', 'ResCaps',
+                    'The model to use. Default: ResCaps')
 
 supported_datasets = ["mnist", "fashion_mnist", "cifar10", "cifar100", "small-norb", "imagenette"]
 flags.DEFINE_string('dataset', 'fashion_mnist',

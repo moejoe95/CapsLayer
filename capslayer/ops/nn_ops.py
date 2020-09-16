@@ -62,11 +62,37 @@ def space_to_batch_nd(input, kernel_size, strides, name=None):
         return tf.concat(blocks, axis=0)
 
 
-def space_to_batch_nd_v1(inputs, kernel_size, strides, name=None):
+def pad_input(inputs, kernel_size, strides):
+    input_shape = cl.shape(inputs)
+
+    size = int((input_shape[1] - kernel_size) / strides + 1)
+    pad_size = (input_shape[1] - size) // 2
+
+    if len(inputs.shape) == 6:
+        padded_input = tf.squeeze(inputs, -1)
+
+        paddings = ((0, 0), (1, 1), (1, 1), (0, 0), (0, 0))
+        for i in range(pad_size):
+            padded_input = tf.pad(padded_input, paddings, mode='SYMMETRIC')
+
+        padded_input = tf.expand_dims(padded_input, axis=-1)
+    else:   
+        paddings = ((0, 0), (1, 1), (1, 1), (0, 0))
+        for i in range(pad_size):
+            padded_input = tf.pad(inputs, paddings, mode='SYMMETRIC')
+
+    return padded_input
+
+
+def space_to_batch_nd_v1(inputs, kernel_size, strides, name=None, padding='VALID'):
     """ for convCapsNet model: memory 4719M, speed 0.169 sec/step
     """
     name = "space_to_batch_nd" if name is None else name
     with tf.name_scope(name):
+
+        if padding == 'SAME':
+            inputs = pad_input(inputs, kernel_size[0], strides[0])
+
         height, width, depth = cl.shape(inputs)[1:4]
         h_offsets = [[(h + k) for k in range(0, kernel_size[0])] for h in range(0, height + 1 - kernel_size[0], strides[0])]
         w_offsets = [[(w + k) for k in range(0, kernel_size[1])] for w in range(0, width + 1 - kernel_size[1], strides[1])]

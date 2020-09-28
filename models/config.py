@@ -24,7 +24,8 @@ flags.DEFINE_integer('train_sum_every', 500, 'the frequency of saving train summ
 flags.DEFINE_integer('val_sum_every', 500, 'the frequency of saving valuation summary(step)')
 flags.DEFINE_integer('save_ckpt_every', 500, 'the frequency of saving model(step)')
 
-flags.DEFINE_float('regularization_scale', 0.392, 'regularization coefficient for reconstruction loss, default to 0.0005*784=0.392')
+flags.DEFINE_float('learning_rate', 0.0001, 'learning rate for adam optimizer')
+flags.DEFINE_float('regularization_scale', 0.3, 'regularization coefficient for reconstruction loss')
 
 
 ############################

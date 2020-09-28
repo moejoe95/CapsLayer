@@ -66,36 +66,32 @@ class CapsNet(object):
         self.routing_method = 'SDARouting'
         self.vec_shape = [8, 1]
         self.decoder = 'DECONV'
+        self.attention = False
+        self.num_iter = 3
+
+        # residual subnetwork
         self.residual = False
         self.residual_padding = 'SAME'
-        self.attention = True
-        self.num_iter = 3
+
+        # residual capsule network
+        self.residual_caps = True
 
         self.conv1_params = {
             "filters": 64,
             "kernel_size": 9,
-            "strides": 1
+            "strides": 2
         }
 
         self.prim_caps_params = {
             "filters": 32,
             "kernel_size": 7,
-            "strides": 2,
+            "strides": 1,
             "out_caps_dims": self.vec_shape
         }
 
-        self.conv_caps1_params = {
-            "filters": 32,
-            "kernel_size": 3,
-            "strides": 1,
-            "out_caps_dims": self.vec_shape,
-            "num_iter": self.num_iter,
-            "routing_method": self.routing_method
-        }
-
-        self.conv_caps2_params = {
-            "filters": 32,
-            "kernel_size": 3,
+        self.conv_caps_params = {
+            "filters": 16,
+            "kernel_size": 5,
             "strides": 1,
             "out_caps_dims": self.vec_shape,
             "num_iter": self.num_iter,
@@ -131,18 +127,43 @@ class CapsNet(object):
                                                 **self.prim_caps_params,
                                                 method="norm",
                                                 name="PrimaryCaps_layer")
-
         # 1st convolutional capsule layer
-        pose_conv, activation_conv, c_1 = cl.layers.conv2d(pose_prim,
+        pose_conv1, activation_conv1, c_1 = cl.layers.conv2d(pose_prim,
                                                 activation_prim,
-                                                **self.conv_caps1_params,
+                                                **self.conv_caps_params,
                                                 name="ConvCaps_layer1")
-
+                                               
         # 2nd convolutional capsule layer
+        pose_conv, activation_conv, c_1 = cl.layers.conv2d(pose_conv1,
+                                                activation_conv1,
+                                                **self.conv_caps_params,
+                                                name="ConvCaps_layer2")
+
+        # 1st residual capsule connection
+        if self.residual_caps:
+            pose_conv, activation_conv = cl.layers.capsResidual(pose_conv1, activation_conv1, pose_conv, activation_conv)
+        
+        # 3rd convolutional capsule layer
+        pose_conv2, activation_conv2, c_1 = cl.layers.conv2d(pose_conv,
+                                                activation_conv,
+                                                **self.conv_caps_params,
+                                                name="ConvCaps_layer3")
+
+        # 4th convolutional capsule layer
+        pose_conv, activation_conv, c_1 = cl.layers.conv2d(pose_conv2,
+                                                activation_conv2,
+                                                **self.conv_caps_params,
+                                                name="ConvCaps_layer4")
+
+        # 2nd residual capsule connection
+        if self.residual_caps:
+            pose_conv, activation_conv = cl.layers.capsResidual(pose_conv2, activation_conv2, pose_conv, activation_conv)
+        
+        # 5th convolutional capsule layer
         pose_conv, activation_conv, c_1 = cl.layers.conv2d(pose_conv,
                                                 activation_conv,
-                                                **self.conv_caps2_params,
-                                                name="ConvCaps_layer2")
+                                                **self.conv_caps_params,
+                                                name="ConvCaps_layer5")
 
         # fully connected capsule layer
         with tf.variable_scope('FullyConnCaps_layer'):
@@ -226,27 +247,39 @@ class CapsNet(object):
             total_loss = margin_loss + cfg.regularization_scale * reconstruction_err #+ t_d_loss
 
             cl.summary.scalar('total_loss', total_loss, verbose=cfg.summary_verbose)
+
             return total_loss
 
 
     def train(self, optimizer, num_gpus=1):
         self.global_step = tf.Variable(1, name='global_step', trainable=False)
         total_loss = self._loss()
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
+        optimizer = tf.train.AdamOptimizer(learning_rate=cfg.learning_rate)
         train_ops = optimizer.minimize(total_loss, global_step=self.global_step)
         summary_ops = tf.summary.merge_all()
 
         return(total_loss, train_ops, summary_ops)
 
     def log_params(self):
+        i = 0
+        dir_exists = False
+        while not dir_exists:
+            self.model_result_dir = os.path.join(cfg.results_dir, cfg.dataset + '_' + cfg.model + '_' + str(i))
+            print(self.model_result_dir)
+            if not os.path.exists(self.model_result_dir):
+                os.makedirs(self.model_result_dir)
+                dir_exists = True
+            i += 1
 
-        params = os.path.join(cfg.results_dir, 'params.conf')
+        params = os.path.join(self.model_result_dir, 'params.conf')
+
         with open(params, 'wt') as fd_params:
 
             fd_params.write(cfg.model + ' at ' + str(datetime.datetime.now()) + '\n\n')
 
             fd_params.write('dataset: ' + cfg.dataset + '\n')
-            fd_params.write('batch_size: ' + str(cfg.batch_size) + '\n\n')
+            fd_params.write('batch_size: ' + str(cfg.batch_size) + '\n')
+            fd_params.write('learning rate: ' + str(cfg.learning_rate) + '\n\n')
 
             # get all class variables
             settings = self.__dict__.copy()

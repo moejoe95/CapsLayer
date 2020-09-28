@@ -28,10 +28,10 @@ from capslayer.plotlib import plot_activation
 from config import cfg
 
 
-def get_file_descriptors(filenames):
+def get_file_descriptors(result_dir, filenames):
     fds = {}
     for filename in filenames:
-        file_path = os.path.join(cfg.results_dir, filename)
+        file_path = os.path.join(result_dir, filename)
         if os.path.exists(file_path):
             os.remove(file_path)
         fd = open(file_path, 'w')
@@ -50,13 +50,13 @@ def fd_write_log(fds, step, values):
         i += 1
 
 
-def save_to():
+def save_to(result_dir):
     os.makedirs(os.path.join(cfg.results_dir, "activations"), exist_ok=True)
     os.makedirs(os.path.join(cfg.results_dir, "timelines"), exist_ok=True)
 
     if cfg.is_training:
         log_files = ['loss.csv', 'train_acc.csv', 'val_acc.csv', 't_score.csv', 'd_score.csv']
-        fd = get_file_descriptors(log_files)
+        fd = get_file_descriptors(result_dir, log_files)
 
     else:
         test_acc = os.path.join(cfg.results_dir, 'test_acc.csv')
@@ -81,9 +81,10 @@ def train(model, data_loader):
     loss, train_ops, summary_ops = model.train(cfg.num_gpus)
 
     # Creating files, saver and summary writer to save training results
-    fd = save_to()
+    fd = save_to(model.model_result_dir)
     summary_writer = tf.summary.FileWriter(cfg.logdir)
     summary_writer.add_graph(tf.get_default_graph())
+
     saver = tf.train.Saver(max_to_keep=3)
 
     # Setting up training session
@@ -95,8 +96,11 @@ def train(model, data_loader):
     with tf.Session(config=config) as sess:
 
         last_checkpoint = tf.train.latest_checkpoint(cfg.logdir)
+
         if last_checkpoint is None:
             tf.logging.info('Train model from scratch!')
+            init_op = tf.global_variables_initializer()
+            sess.run(init_op)
         else:
             saver.restore(sess, last_checkpoint)
             tf.logging.info('Model restored!')
@@ -104,8 +108,7 @@ def train(model, data_loader):
 
         training_handle = sess.run(training_iterator.string_handle())
         validation_handle = sess.run(validation_iterator.string_handle())
-        init_op = tf.global_variables_initializer()
-        sess.run(init_op)
+
         print("\nNote: all of results will be saved to directory: " + cfg.results_dir)
         for step in range(1, cfg.num_steps):
             start_time = time.time()

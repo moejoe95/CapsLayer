@@ -107,19 +107,23 @@ def getParamsSkip(skip_params, previous_params):
     }
 
 
-def capsResidual(res_pose, res_activation, previous_pose, previous_activation, skip_params):
+def capsResidual(res_pose, res_activation, previous_pose, previous_activation, skip_layer_params=None):
     """
     Adds skip connection to output of previous caps layer and performs relu activation.
     """
-    skip_pose, skip_activation, _ = cl.layers.conv2d(res_pose,
-                                        res_activation,
-                                        **skip_params,
-                                        name="ConvCaps_layer_skip")
+    if skip_layer_params:
+        res_pose, res_activation, _ = cl.layers.conv2d(res_pose,
+                                            res_activation,
+                                            **skip_params,
+                                            name="ConvCaps_layer_skip")
 
-    pose_add = tf.keras.layers.Add()([previous_pose, skip_pose])
-    pose_add = tf.nn.relu(pose_add)
-    activation_add = tf.keras.layers.Add()([previous_activation, skip_activation])
-    activation_add = tf.nn.relu(activation_add)
+    pose_sum = tf.keras.layers.Add()([previous_pose, res_pose])
+    activation_sum = tf.keras.layers.Add()([previous_activation, res_activation])
+    
+    #pose_sum = tf.keras.layers.BatchNormalization(name='bn_res_caps_1')(pose_sum, training=cfg.is_training)
+    #activation_sum = tf.keras.layers.BatchNormalization(name='bn_res_caps_2')(activation_sum, training=cfg.is_training)
 
-    return pose_add, activation_add
-        
+    #pose_sum = tf.nn.relu(pose_sum)
+    #activation_sum = tf.nn.relu(activation_sum)
+    
+    return pose_sum, activation_sum

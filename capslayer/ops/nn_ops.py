@@ -62,7 +62,7 @@ def space_to_batch_nd(input, kernel_size, strides, name=None):
         return tf.concat(blocks, axis=0)
 
 
-def pad_input(inputs, kernel_size, strides):
+def pad_input_same(inputs, kernel_size, strides):
     input_shape = cl.shape(inputs)
 
     size = int((input_shape[1] - kernel_size) / strides + 1)
@@ -91,7 +91,7 @@ def space_to_batch_nd_v1(inputs, kernel_size, strides, name=None, padding='VALID
     with tf.name_scope(name):
 
         if padding == 'SAME':
-            inputs = pad_input(inputs, kernel_size[0], strides[0])
+            inputs = pad_input_same(inputs, kernel_size[0], strides[0])
 
         height, width, depth = cl.shape(inputs)[1:4]
         h_offsets = [[(h + k) for k in range(0, kernel_size[0])] for h in range(0, height + 1 - kernel_size[0], strides[0])]

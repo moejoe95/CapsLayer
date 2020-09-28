@@ -13,3 +13,5 @@ build/
 data
 env/
 *.txt
+*.sh
+*.out

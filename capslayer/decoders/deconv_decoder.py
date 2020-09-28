@@ -75,7 +75,10 @@ class DeconvDecoderNet(object):
             conv_rec2 = tf.layers.conv2d(res1, name="conv2_rec", **conv_rec2_params)
             res2 = tf.image.resize_images(conv_rec2, (17, 17), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             conv_rec3 = tf.layers.conv2d(res2, name="conv3_rec", **conv_rec3_params)
-            res3 = tf.image.resize_images(conv_rec3, (self.height*2, self.width*2), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
+            s = 16 // self.vec_shape[0]
+            res3 = tf.image.resize_images(conv_rec3, (self.height *s, self.width *s), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
             recon_imgs = tf.layers.conv2d(res3, name="conv4_rec", **conv_rec4_params)
 
             return tf.reshape(recon_imgs, shape=(-1, self.height * self.width * self.channels)), self.labels_one_hoted

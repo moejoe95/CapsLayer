@@ -16,7 +16,7 @@ class FCDecoderNet(object):
         '''
         Reconstruction network from CapsLayer, needs ~1.4m parameters for 28x28x1 images!
         '''
-        with tf.variable_scope('Decoder'):
+        with tf.compat.v1.variable_scope('Decoder'):
             labels = tf.one_hot(self.labels, depth=self.num_label, axis=-1, dtype=tf.float32)
             labels_one_hoted = tf.reshape(labels, (-1, self.num_label, 1, 1))
 
@@ -39,7 +39,7 @@ class FCDecoderNet(object):
         '''
         Reconstruction network from gamma-capsule-network, needs ~1.4m parameters for 28x28x1 images!
         '''
-        with tf.variable_scope('Decoder'):
+        with tf.compat.v1.variable_scope('Decoder'):
             labels = tf.one_hot(self.labels, depth=self.num_label, axis=-1, dtype=tf.float32)
             labels_one_hoted = tf.reshape(labels, (-1, self.num_label, 1, 1))
 

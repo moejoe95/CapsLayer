@@ -167,8 +167,8 @@ if __name__ == "__main__":
                     dtype=tf.float32)
     c1 = tf.matmul(a, b, transpose_a=True, transpose_b=True)
     c2 = matmul_v2(a, b, transpose_a=True, transpose_b=True)
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
-    sess = tf.Session(config=config)
+    sess = tf.compat.v1.Session(config=config)
     print(sess.run(c1))
     print(sess.run(c2))

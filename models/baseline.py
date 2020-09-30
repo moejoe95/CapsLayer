@@ -50,7 +50,7 @@ class Model(object):
         self.y_pred = out
         self.probs = tf.nn.softmax(self.y_pred, axis=1)
 
-        with tf.variable_scope('accuracy'):
+        with tf.compat.v1.variable_scope('accuracy'):
             logits_idx = tf.to_int32(tf.argmax(self.probs, axis=1))
             correct_prediction = tf.equal(tf.to_int32(self.labels), logits_idx)
             correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
@@ -61,7 +61,7 @@ class Model(object):
         self.T = tf.constant(0.0, dtype=tf.float32, shape = ())
         self.D = tf.constant(0.0, dtype=tf.float32, shape = ())
 
-        print('num params:', np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
+        print('num params:', np.sum([np.prod(v.get_shape().as_list()) for v in tf.compat.v1.trainable_variables()]))
 
     def _loss(self):
         return tf.losses.softmax_cross_entropy(self.y, self.y_pred)
@@ -69,8 +69,8 @@ class Model(object):
     def train(self, optimizer, num_gpus=1):
         self.global_step = tf.Variable(1, name='global_step', trainable=False)
         total_loss = self._loss()
-        optimizer = tf.train.AdamOptimizer()
+        optimizer = tf.compat.v1.train.AdamOptimizer()
         train_ops = optimizer.minimize(total_loss, global_step=self.global_step)
-        summary_ops = tf.summary.merge_all()
+        summary_ops = tf.compat.v1.summary.merge_all()
 
         return(total_loss, train_ops, summary_ops)

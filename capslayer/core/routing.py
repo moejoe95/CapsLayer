@@ -48,7 +48,7 @@ def routing(votes,
         raise ValueError('Activation to "routing" should have rank 2 or 4 but it is rank', str(activation_rank))
 
     name = "routing" if name is None else name
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         if method == 'EMRouting':
             pose, activation = EMRouting(votes, activation, num_iter)
         elif method == 'DynamicRouting':
@@ -291,7 +291,7 @@ def dynamicRouting_v1(votes,
 
     vote_stopped = tf.stop_gradient(votes, name="stop_gradient")
     for i in range(num_routing):
-        with tf.variable_scope("iter_" + str(i)):
+        with tf.compat.v1.variable_scope("iter_" + str(i)):
             if leaky:
                 route = _leaky_routing(logits)
             else:
@@ -346,14 +346,14 @@ def EMRouting(votes,
         #  let k = (lambda_max - lambda_min) / num_routing
         # TODO: search for the better lambda_min and lambda_max
         inverse_temperature = lambda_min + (lambda_max - lambda_min) * t_iter / max(1.0, num_routing)
-        with tf.variable_scope('M-STEP') as scope:
+        with tf.compat.v1.variable_scope('M-STEP') as scope:
             if t_iter > 0:
                 scope.reuse_variables()
             pose, log_var, log_activation_prime = M_step(log_R, log_activation, votes, lambda_val=inverse_temperature)
             # It's no need to do the `E-STEP` in the last iteration
             if t_iter == num_routing - 1:
                 break
-        with tf.variable_scope('E-STEP'):
+        with tf.compat.v1.variable_scope('E-STEP'):
             log_R = E_step(pose, log_var, log_activation_prime, votes)
     pose = tf.reshape(pose, shape=vote_shape[:-4] + [num_outputs] + out_caps_dims)
     activation = tf.reshape(tf.exp(log_activation_prime), shape=vote_shape[:-4] + [num_outputs])

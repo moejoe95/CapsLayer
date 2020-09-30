@@ -108,7 +108,7 @@ class CapsNet(object):
         # self.probs.shape = (?, 10)
 
         # count number of paramters
-        num_param = np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
+        num_param = np.sum([np.prod(v.get_shape().as_list()) for v in tf.compat.v1.trainable_variables()])
         print('parameters:', num_param)
 
         probs.append(tf.reduce_mean(self.probs))
@@ -117,7 +117,7 @@ class CapsNet(object):
         # Decoder structure
         # Reconstructe the inputs with 3 FC layers
         # [batch_size, 1, 16, 1] => [batch_size, 16] => [batch_size, 512]
-        with tf.variable_scope('Decoder'):
+        with tf.compat.v1.variable_scope('Decoder'):
             labels = tf.one_hot(self.labels, depth=self.num_label, axis=-1, dtype=tf.float32)
             self.labels_one_hoted = tf.reshape(labels, (-1, self.num_label, 1, 1))
             masked_caps = tf.multiply(self.poses, self.labels_one_hoted)
@@ -132,7 +132,7 @@ class CapsNet(object):
             recon_imgs = tf.reshape(self.recon_imgs, shape=[-1, self.height, self.width, self.channels])
             cl.summary.image('reconstruction_img', recon_imgs, verbose=cfg.summary_verbose)
 
-        with tf.variable_scope('accuracy'):
+        with tf.compat.v1.variable_scope('accuracy'):
             cl.summary.histogram('activation', tf.nn.softmax(self.probs, 1), verbose=cfg.summary_verbose)
             logits_idx = tf.to_int32(tf.argmax(cl.softmax(self.probs, axis=1), axis=1))
             correct_prediction = tf.equal(tf.to_int32(self.labels), logits_idx)
@@ -148,7 +148,7 @@ class CapsNet(object):
         return self.poses, self.probs
 
     def _loss(self):
-        with tf.variable_scope("loss"):
+        with tf.compat.v1.variable_scope("loss"):
             # The reconstruction loss
             orgin = tf.reshape(self.raw_imgs, shape=(-1, self.height * self.width * self.channels))
             squared = tf.square(self.recon_imgs - orgin)
@@ -175,8 +175,8 @@ class CapsNet(object):
     def train(self, optimizer, num_gpus=1):
         self.global_step = tf.Variable(1, name='global_step', trainable=False)
         total_loss = self._loss()
-        optimizer = tf.train.AdamOptimizer()
+        optimizer = tf.compat.v1.train.AdamOptimizer()
         train_ops = optimizer.minimize(total_loss, global_step=self.global_step)
-        summary_ops = tf.summary.merge_all()
+        summary_ops = tf.compat.v1.summary.merge_all()
 
         return(total_loss, train_ops, summary_ops)

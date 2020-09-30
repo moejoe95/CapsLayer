@@ -10,7 +10,7 @@ def selfAttention(x, ch, name='attention'):
     '''
     Self-Attention mechanism from: https://github.com/taki0112/Self-Attention-GAN-Tensorflow
     '''
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
 
         f = tf.layers.conv2d(x, ch // 8, kernel_size=1, strides=1) 
         g = tf.layers.conv2d(x, ch // 8, kernel_size=1, strides=1)

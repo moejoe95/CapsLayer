@@ -82,18 +82,18 @@ def train(model, data_loader):
 
     # Creating files, saver and summary writer to save training results
     fd = save_to(model.model_result_dir)
-    summary_writer = tf.summary.FileWriter(cfg.logdir)
-    summary_writer.add_graph(tf.get_default_graph())
+    summary_writer = tf.compat.v1.summary.FileWriter(cfg.logdir)
+    summary_writer.add_graph(tf.compat.v1.get_default_graph())
 
-    saver = tf.train.Saver(max_to_keep=3)
+    saver = tf.compat.v1.train.Saver(max_to_keep=3)
 
     # Setting up training session
     #run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-    run_metadata = tf.RunMetadata()
-    config = tf.ConfigProto()
+    run_metadata = tf.compat.v1.RunMetadata()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
 
-    with tf.Session(config=config) as sess:
+    with tf.compat.v1.Session(config=config) as sess:
 
         last_checkpoint = tf.train.latest_checkpoint(cfg.logdir)
 
@@ -176,11 +176,11 @@ def evaluate(model, data_loader):
 
     # Create files to save evaluating results
     fd = save_to()
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
 
-    config = tf.ConfigProto(allow_soft_placement=True)
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
     config.gpu_options.allow_growth = True
-    with tf.Session(config=config) as sess:
+    with tf.compat.v1.Session(config=config) as sess:
         test_handle = sess.run(test_iterator.string_handle())
         saver.restore(sess, tf.train.latest_checkpoint(cfg.logdir))
         tf.logging.info('Model restored!')
@@ -268,4 +268,4 @@ if __name__ == "__main__":
         print('IMPORT ERROR')
         pass
 
-    tf.app.run()
+    tf.compat.v1.app.run()

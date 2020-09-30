@@ -174,7 +174,7 @@ class CapsNet(object):
                                                 name="ConvCaps_layer6")
 
         # fully connected capsule layer
-        with tf.variable_scope('FullyConnCaps_layer'):
+        with tf.compat.v1.variable_scope('FullyConnCaps_layer'):
             num_inputs = np.prod(cl.shape(pose_conv)[1:4])
             pose_conv = tf.reshape(pose_conv, shape=[-1, num_inputs, self.vec_shape[0], self.vec_shape[1]])
             activation_conv = tf.reshape(activation_conv, shape=[-1, num_inputs])
@@ -184,7 +184,7 @@ class CapsNet(object):
                                                      **self.fc_caps_params)
         
 
-        with tf.variable_scope('gamma_metrics'):
+        with tf.compat.v1.variable_scope('gamma_metrics'):
             self.T = (cl.ops.t_score(c_1) + cl.ops.t_score(c_2)) / 2                                      
             self.D = cl.ops.d_score(activation_conv)
 
@@ -213,7 +213,7 @@ class CapsNet(object):
         self.calculate_accuracy()
 
         # count number of trainable parameters
-        self.num_train_params = np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
+        self.num_train_params = np.sum([np.prod(v.get_shape().as_list()) for v in tf.compat.v1.trainable_variables()])
 
         # log parameters into file params.conf
         self.log_params()
@@ -222,7 +222,7 @@ class CapsNet(object):
 
 
     def calculate_accuracy(self):
-        with tf.variable_scope('accuracy'):
+        with tf.compat.v1.variable_scope('accuracy'):
             logits_idx = tf.to_int32(tf.argmax(cl.softmax(self.probs, axis=1), axis=1))
             correct_prediction = tf.equal(tf.to_int32(self.labels), logits_idx)
             correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
@@ -231,7 +231,7 @@ class CapsNet(object):
 
 
     def _loss(self):
-        with tf.variable_scope("loss"):
+        with tf.compat.v1.variable_scope("loss"):
             # 1. Margin loss
             margin_loss = cl.losses.margin_loss(logits=self.probs,
                                                 labels=tf.squeeze(self.labels_one_hoted, axis=(2, 3)))
@@ -266,11 +266,11 @@ class CapsNet(object):
             self.lr = cl.losses.get_decaying_learning_rate(self.global_step)
 
         cl.summary.scalar('learning_rate', self.lr, verbose=cfg.summary_verbose)
-        optimizer = tf.train.AdamOptimizer(learning_rate=self.lr)
+        optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr)
 
         total_loss = self._loss()
         train_ops = optimizer.minimize(total_loss, global_step=self.global_step)
-        summary_ops = tf.summary.merge_all()
+        summary_ops = tf.compat.v1.summary.merge_all()
 
         return(total_loss, train_ops, summary_ops)
 

@@ -56,7 +56,7 @@ def conv2d(inputs,
     """
 
     name = "conv2d" if name is None else name
-    with tf.variable_scope(name) as scope:
+    with tf.compat.v1.variable_scope(name) as scope:
         if reuse:
             scope.reuse_variables()
 
@@ -208,7 +208,7 @@ def conv1d(inputs,
     """
 
     name = "conv1d" if name is None else name
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         input_shape = cl.shape(inputs)
         input_rank = len(input_shape)
         activation_rank = len(activation.shape)

@@ -33,7 +33,7 @@ def transforming(inputs, num_outputs, out_caps_dims, name=None):
         votes: A 5-D or 7-D tensor, [batch_size, num_inputs, num_outputs] + out_caps_dims or [batch_size, height, width, channels, num_outputs] + out_caps_dims.
     """
     name = "transforming" if name is None else name
-    with tf.variable_scope(name) as scope:
+    with tf.compat.v1.variable_scope(name) as scope:
         input_shape = cl.shape(inputs)
         prefix_shape = [1 for i in range(len(input_shape) - 3)] + input_shape[-3:-2] + [num_outputs]
         in_caps_dims = input_shape[-2:]

@@ -44,9 +44,9 @@ if __name__ == "__main__":
     transfered = testSpaceToBatch()
     transfered_v1 = testSpaceToBatch_v1()
     out = testBatchToSpace(tf.reduce_mean(transfered, axis=-1))
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     out1 = sess.run(transfered)
     out2 = sess.run(transfered_v1)
     # out2 = sess.run(out)

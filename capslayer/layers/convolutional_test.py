@@ -41,10 +41,10 @@ def testConv2d():
 
 if __name__ == "__main__":
     conv_cl, conv_tf = testConv2d()
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
     init = tf.global_variables_initializer()
-    sess = tf.Session(config=config)
+    sess = tf.compat.v1.Session(config=config)
     sess.run(init)
     conv_cl = sess.run(conv_cl)
     conv_tf = sess.run(conv_tf)

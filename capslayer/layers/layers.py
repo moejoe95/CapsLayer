@@ -50,7 +50,7 @@ def dense(inputs, activation,
         activation: [batch_size, num_outputs]
     """
     name = "dense" if name is None else name
-    with tf.variable_scope(name) as scope:
+    with tf.compat.v1.variable_scope(name) as scope:
         if reuse:
             scope.reuse()
         if coordinate_addition and len(inputs.shape) == 6 and len(activation.shape) == 4:
@@ -118,7 +118,7 @@ def primaryCaps(inputs, filters,
     '''
 
     name = "primary_capsule" if name is None else name
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         channels = filters * np.prod(out_caps_dims)
         channels = channels + filters if method == "logistic" else channels
 

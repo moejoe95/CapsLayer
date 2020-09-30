@@ -104,6 +104,48 @@ def fcm_loss(inputs, probs, num_iters=5, m=2):
     return loss
 
 
-def get_decaying_learning_rate(step, increase_step=100000, alpha_0=0.1, decayRate=1):
-    epoch = step // increase_step
-    return (1 / (1 + decayRate * epoch)) * alpha_0
+def get_learning_rate(step, decay_step, lr, lr_0, method='standard'):
+    if decay_step <= 0 or lr < 1e-7:
+        return lr
+    
+    epoch = step // decay_step
+ 
+    if method == 'exponential':
+        return get_decaying_lr_exp(epoch, lr_0)
+    elif method == 'staircase':
+        return get_decaying_lr_staircase(lr)
+    
+    return get_decaying_lr(epoch, lr_0)
+    
+'''
+decaying learning rates, from:
+https://medium.com/analytics-vidhya/learning-rate-decay-and-methods-in-deep-learning-2cee564f910b
+'''
+
+def get_decaying_lr(epoch, lr_0, decay_rate=1):
+    '''
+
+    alpha = 1 / (1 + decay_rate * epoch) * lr_0
+    
+    epoch 0: 0.001
+    epoch 1: 0.0005
+    epoch 2: 0.00033
+    epoch 3: 0.00025
+    epoch 4: 0.0002
+    ...
+    '''
+
+    return (1 / (1 + decay_rate * epoch)) * lr_0
+
+
+def get_decaying_lr_exp(epoch, lr_0, decay_rate=0.95):
+    '''
+
+    lr = decay_rate^epoch * lr_0
+
+    '''
+    return pow(decay_rate, epoch) * lr_0
+
+
+def get_decaying_lr_staircase(lr, decay_rate=0.5):
+    return lr * decay_rate

@@ -17,14 +17,15 @@ flags.DEFINE_float('m_scheduler', 1, '.')
 flags.DEFINE_float('lambda_val', 0.5, 'down weight of the loss for absent digit classes')
 
 # for training
-flags.DEFINE_integer('batch_size', 32, 'batch size')
-flags.DEFINE_integer('num_steps', 1000000, 'The number of training steps, default: 30,000')
+flags.DEFINE_integer('batch_size', 16, 'batch size')
+flags.DEFINE_integer('num_steps', 300000, 'The number of training steps, default: 30,000')
 flags.DEFINE_integer('iter_routing', 3, 'number of iterations in routing algorithm')
-flags.DEFINE_integer('train_sum_every', 1000, 'the frequency of saving train summary(step)')
-flags.DEFINE_integer('val_sum_every', 1000, 'the frequency of saving valuation summary(step)')
+flags.DEFINE_integer('train_sum_every', 2000, 'the frequency of saving train summary(step)')
+flags.DEFINE_integer('val_sum_every', 2000, 'the frequency of saving evaluation summary(step)')
 flags.DEFINE_integer('save_ckpt_every', 5000, 'the frequency of saving model(step)')
 
-flags.DEFINE_float('learning_rate', 0.1, 'learning rate for adam optimizer')
+flags.DEFINE_float('learning_rate', 0.0001, 'learning rate for adam optimizer')
+flags.DEFINE_float('decay_step', 3000, 'steps after decay of learning rate (if negative, no decay)')
 flags.DEFINE_float('regularization_scale', 0.3, 'regularization coefficient for reconstruction loss')
 
 

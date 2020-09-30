@@ -141,7 +141,7 @@ def train(model, data_loader):
                 n = 0
                 while True:
                     try:
-                        val_acc, prob, label, lr = sess.run([model.accuracy, model.probs, labels], feed_dict={data_loader.handle: validation_handle})
+                        val_acc, prob, label = sess.run([model.accuracy, model.probs, labels], feed_dict={data_loader.handle: validation_handle})
                         probs.append(prob)
                         targets.append(label)
                         total_acc += val_acc

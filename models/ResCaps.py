@@ -93,7 +93,7 @@ class CapsNet(object):
 
         self.conv_caps_params = {
             "filters": 16,
-            "kernel_size": 3,
+            "kernel_size": 5,
             "strides": 1,
             "out_caps_dims": self.vec_shape,
             "num_iter": self.num_iter,
@@ -262,8 +262,8 @@ class CapsNet(object):
     def train(self, optimizer, num_gpus=1):
         self.global_step = tf.Variable(1, name='global_step', trainable=False)
         
-        if self.global_step % 10000 == 0:
-            self.lr = cl.losses.get_decaying_learning_rate(self.global_step)
+
+        self.lr = cl.losses.get_learning_rate(self.global_step, int(cfg.decay_step), self.lr, cfg.learning_rate)
 
         cl.summary.scalar('learning_rate', self.lr, verbose=cfg.summary_verbose)
         optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr)

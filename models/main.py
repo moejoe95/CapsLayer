@@ -129,10 +129,11 @@ def train(model, data_loader):
                 fd_write_log(fd, step, [loss_val, train_acc, T, D])
             else:
                 _, loss_val, T, D = sess.run([train_ops, loss, model.T, model.D], feed_dict={data_loader.handle: training_handle})
-                # assert not np.isnan(loss_val), 'Something wrong! loss is nan...'
+                assert not np.isnan(loss_val), 'Something wrong! loss is nan...'
 
             if step % cfg.val_sum_every == 0:
-                print("evaluating, it will take a while...")
+                if cfg.verbose:
+                    print("evaluating, it will take a while...")
                 sess.run(validation_iterator.initializer)
                 probs = []
                 targets = []
@@ -140,7 +141,7 @@ def train(model, data_loader):
                 n = 0
                 while True:
                     try:
-                        val_acc, prob, label = sess.run([model.accuracy, model.probs, labels], feed_dict={data_loader.handle: validation_handle})
+                        val_acc, prob, label, lr = sess.run([model.accuracy, model.probs, labels], feed_dict={data_loader.handle: validation_handle})
                         probs.append(prob)
                         targets.append(label)
                         total_acc += val_acc
@@ -162,7 +163,8 @@ def train(model, data_loader):
             duration = time.time() - start_time
             log_str = ' step: {:d}, loss: {:.3f}, time: {:.3f} sec/step, T: {:.3f}, D: {:.3f}' \
                       .format(step, loss_val, duration, T, D)
-            print(log_str)
+            if cfg.verbose:
+                print(log_str)
 
 
 def evaluate(model, data_loader):

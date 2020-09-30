@@ -102,3 +102,8 @@ def fcm_loss(inputs, probs, num_iters=5, m=2):
     delta_probs = tf.stack(delta_probs, axis=0)
     loss = tf.reduce_sum(weights * delta_probs) / tf.reduce_sum(weights)
     return loss
+
+
+def get_decaying_learning_rate(step, increase_step=100000, alpha_0=0.1, decayRate=1):
+    epoch = step // increase_step
+    return (1 / (1 + decayRate * epoch)) * alpha_0

@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from capslayer import layers
 from capslayer import decoders
-from capslayer import data
+from capslayer import datasets
 from capslayer.ops import losses
 from capslayer import summary
 from capslayer.ops.losses import losses

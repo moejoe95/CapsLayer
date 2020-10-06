@@ -67,16 +67,12 @@ class CapsNet(object):
 
         self.routing_method = 'SDARouting'
         self.vec_shape = [8, 1]
-        self.decoder = 'DECONV'
+        self.decoder = 'NONE'
         self.attention = False
         self.num_iter = 3
 
         # residual subnetwork
-        self.residual = False
-        self.residual_padding = 'SAME'
-
-        # residual capsule network
-        self.residual_caps = True
+        self.preCapsResidualNet = False
 
         self.conv1_params = {
             "filters": 64,
@@ -93,7 +89,7 @@ class CapsNet(object):
 
         self.conv_caps_params = {
             "filters": 16,
-            "kernel_size": 5,
+            "kernel_size": 3,
             "strides": 1,
             "out_caps_dims": self.vec_shape,
             "num_iter": self.num_iter,
@@ -110,9 +106,9 @@ class CapsNet(object):
 
         inputs = tf.reshape(self.raw_imgs, shape=[-1, self.height, self.width, self.channels])
 
-        if self.residual:
-            conv1 = cl.layers.residualConvs(inputs, self.conv1_params, padding=self.residual_padding)
-        else:
+        if self.preCapsResidualNet: # pre-capsule residual subnetwork
+            conv1 = cl.layers.residualConvs(inputs, self.conv1_params, padding='SAME')
+        else: # do normal convolution before capsule network
             conv1 = tf.layers.conv2d(inputs,
                                     **self.conv1_params,
                                     padding='VALID',
@@ -125,68 +121,28 @@ class CapsNet(object):
             conv1 = cl.layers.selfAttention(conv1, self.conv1_params['filters'])
 
         # primary caps layer
-        pose_prim, activation_prim = cl.layers.primaryCaps(conv1,
+        pose, activation = cl.layers.primaryCaps(conv1,
                                                 **self.prim_caps_params,
                                                 method="norm",
                                                 name="PrimaryCaps_layer")
-        # 1st convolutional capsule layer
-        pose_conv1, activation_conv1, _ = cl.layers.conv2d(pose_prim,
-                                                activation_prim,
-                                                **self.conv_caps_params,
-                                                name="ConvCaps_layer1")
 
-        # 2nd convolutional capsule layer
-        pose_conv, activation_conv, _ = cl.layers.conv2d(pose_conv1,
-                                                activation_conv1,
-                                                **self.conv_caps_params,
-                                                name="ConvCaps_layer2")
-        
-        # 3rd convolutional capsule layer
-        pose_conv, activation_conv, _ = cl.layers.conv2d(pose_conv,
-                                                activation_conv,
-                                                **self.conv_caps_params,
-                                                name="ConvCaps_layer3")
-
-        # 1st residual capsule connection
-        if self.residual_caps:
-            pose_conv2, activation_conv2 = cl.layers.capsResidual(pose_conv1, activation_conv1, pose_conv, activation_conv)
-
-        # 4th convolutional capsule layer
-        pose_conv, activation_conv, _ = cl.layers.conv2d(pose_conv2,
-                                                activation_conv2,
-                                                **self.conv_caps_params,
-                                                name="ConvCaps_layer4")                                                
-
-        # 5th convolutional capsule layer
-        pose_conv, activation_conv, c_1 = cl.layers.conv2d(pose_conv,
-                                                activation_conv,
-                                                **self.conv_caps_params,
-                                                name="ConvCaps_layer5")
-
-        # 2nd residual capsule connection
-        if self.residual_caps:
-            pose_conv, activation_conv = cl.layers.capsResidual(pose_conv2, activation_conv2, pose_conv, activation_conv)
-        
-        # 6th convolutional capsule layer
-        pose_conv, activation_conv, c_1 = cl.layers.conv2d(pose_conv,
-                                                activation_conv,
-                                                **self.conv_caps_params,
-                                                name="ConvCaps_layer6")
+        # residual capsule network                                      
+        pose, activation, c_1 = cl.layers.residualCapsNetwork(pose, activation, self.conv_caps_params)                                    
 
         # fully connected capsule layer
         with tf.compat.v1.variable_scope('FullyConnCaps_layer'):
-            num_inputs = np.prod(cl.shape(pose_conv)[1:4])
-            pose_conv = tf.reshape(pose_conv, shape=[-1, num_inputs, self.vec_shape[0], self.vec_shape[1]])
-            activation_conv = tf.reshape(activation_conv, shape=[-1, num_inputs])
+            num_inputs = np.prod(cl.shape(pose)[1:4])
+            pose = tf.reshape(pose, shape=[-1, num_inputs, self.vec_shape[0], self.vec_shape[1]])
+            activation = tf.reshape(activation, shape=[-1, num_inputs])
 
-            self.poses, self.probs, c_2 = cl.layers.dense(pose_conv,
-                                                     activation_conv,
+            self.poses, self.probs, c_2 = cl.layers.dense(pose,
+                                                     activation,
                                                      **self.fc_caps_params)
         
 
         with tf.compat.v1.variable_scope('gamma_metrics'):
             self.T = (cl.ops.t_score(c_1) + cl.ops.t_score(c_2)) / 2                                      
-            self.D = cl.ops.d_score(activation_conv)
+            self.D = cl.ops.d_score(activation)
 
         # reconstruction network
         if self.decoder == 'FC':
@@ -196,6 +152,8 @@ class CapsNet(object):
                                                 self.num_label, 
                                                 self.labels,
                                                 self.poses)
+            self.recon_imgs, self.labels_one_hoted = decoderNet.reconstruct_image()
+
         elif self.decoder == 'DECONV':
             decoderNet = cl.decoders.DeconvDecoderNet(self.height, 
                                                     self.width, 
@@ -203,12 +161,17 @@ class CapsNet(object):
                                                     self.num_label, 
                                                     self.labels,
                                                     self.probs,
-                                                    self.vec_shape)      
-        else:
-            print('decoder', decoder, 'not known. Value should be either FC or DECONV.')   
-            exit(-1)   
+                                                    self.vec_shape)     
+            self.recon_imgs, self.labels_one_hoted = decoderNet.reconstruct_image() 
+        
+        elif self.decoder == 'NONE':
+            # use no decoder at all
+            labels = tf.one_hot(self.labels, depth=self.num_label, axis=-1, dtype=tf.float32)
+            self.recon_imgs, self.labels_one_hoted = None, tf.reshape(labels, (-1, self.num_label, 1, 1))
 
-        self.recon_imgs, self.labels_one_hoted = decoderNet.reconstruct_image()
+        else:
+            print("decoder:", "'" + self.decoder + "'", "not known")
+            exit(-1)
 
         self.calculate_accuracy()
 
@@ -238,21 +201,16 @@ class CapsNet(object):
             cl.summary.scalar('margin_loss', margin_loss, verbose=cfg.summary_verbose)
 
             # 2. The reconstruction loss
-            origin = tf.reshape(self.raw_imgs, shape=(-1, self.height * self.width * self.channels))
+            if self.decoder == 'NONE':
+                reconstruction_err = 0
+            else:
+                origin = tf.reshape(self.raw_imgs, shape=(-1, self.height * self.width * self.channels))
+                squared = tf.square(self.recon_imgs - origin)
+                reconstruction_err = tf.reduce_mean(squared)
+                cl.summary.scalar('reconstruction_loss', reconstruction_err, verbose=cfg.summary_verbose)
 
-            squared = tf.square(self.recon_imgs - origin)
-            reconstruction_err = tf.reduce_mean(squared)
-            cl.summary.scalar('reconstruction_loss', reconstruction_err, verbose=cfg.summary_verbose)
-
-            # 3. T/D loss
-            #t_d_loss = (1 - self.T)  * 0.05
-
-            # 3. Total loss
-            # The paper uses sum of squared error as reconstruction error, but we
-            # have used reduce_mean in `# 2 The reconstruction loss` to calculate
-            # mean squared error. In order to keep in line with the paper,the
-            # regularization scale should be 0.0005*784=0.392
-            total_loss = margin_loss + cfg.regularization_scale * reconstruction_err #+ t_d_loss
+            # total loss
+            total_loss = margin_loss + cfg.regularization_scale * reconstruction_err
 
             cl.summary.scalar('total_loss', total_loss, verbose=cfg.summary_verbose)
 
@@ -261,8 +219,6 @@ class CapsNet(object):
 
     def train(self, optimizer, num_gpus=1):
         self.global_step = tf.Variable(1, name='global_step', trainable=False)
-        
-
         self.lr = cl.losses.get_learning_rate(self.global_step, int(cfg.decay_step), self.lr, cfg.learning_rate)
 
         cl.summary.scalar('learning_rate', self.lr, verbose=cfg.summary_verbose)
@@ -280,7 +236,6 @@ class CapsNet(object):
         dir_exists = False
         while not dir_exists:
             self.model_result_dir = os.path.join(cfg.results_dir, cfg.dataset + '_' + cfg.model + '_' + str(i))
-            print(self.model_result_dir)
             if not os.path.exists(self.model_result_dir):
                 os.makedirs(self.model_result_dir)
                 dir_exists = True
@@ -294,7 +249,7 @@ class CapsNet(object):
 
             fd_params.write('dataset: ' + cfg.dataset + '\n')
             fd_params.write('batch_size: ' + str(cfg.batch_size) + '\n')
-            fd_params.write('learning rate: ' + str(cfg.learning_rate) + '\n\n')
+            fd_params.write('decay step: ' + str(cfg.decay_step) + '\n\n')
 
             # get all class variables
             settings = self.__dict__.copy()

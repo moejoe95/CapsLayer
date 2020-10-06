@@ -25,7 +25,7 @@ from capslayer.layers.attention import selfAttention
 from capslayer.layers.layers import dense
 from capslayer.layers.layers import dense as fully_connected
 from capslayer.layers.residual_layers import residualConvs
-from capslayer.layers.residual_layers import capsResidual
+from capslayer.layers.residual_layers import residualCapsNetwork
 from capslayer.layers.residual_layers import getParamsSkip
 
 __all__ = [
@@ -38,5 +38,5 @@ __all__ = [
         'fully_connected', 
         'residualConvs', 
         'getParamsSkip',
-        'capsResidual'
+        'residualCapsNetwork'
         ]

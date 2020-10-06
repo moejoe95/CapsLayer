@@ -107,9 +107,9 @@ def getParamsSkip(skip_params, previous_params):
     }
 
 
-def capsResidual(res_pose, res_activation, previous_pose, previous_activation, skip_layer_params=None):
+def addSkipConnection(res_pose, res_activation, previous_pose, previous_activation, skip_layer_params=None):
     """
-    Adds skip connection to output of previous caps layer and performs relu activation.
+    Adds skip connection in a Residual Capsule network.
     """
     if skip_layer_params:
         res_pose, res_activation, _ = cl.layers.conv2d(res_pose,
@@ -120,10 +120,30 @@ def capsResidual(res_pose, res_activation, previous_pose, previous_activation, s
     pose_sum = tf.keras.layers.Add()([previous_pose, res_pose])
     activation_sum = tf.keras.layers.Add()([previous_activation, res_activation])
     
-    #pose_sum = tf.keras.layers.BatchNormalization(name='bn_res_caps_1')(pose_sum, training=cfg.is_training)
-    #activation_sum = tf.keras.layers.BatchNormalization(name='bn_res_caps_2')(activation_sum, training=cfg.is_training)
-
-    #pose_sum = tf.nn.relu(pose_sum)
-    #activation_sum = tf.nn.relu(activation_sum)
-    
     return pose_sum, activation_sum
+
+
+def residualCapsNetwork(pose, activation, params, layers=6, skip=((1,3), (3,5))):
+    """
+    Adds a Residual Capsule Network.
+    """
+    poses, activations = [], []
+
+    skip_from = [skip_from[0] for skip_from in skip]
+    skip_on = [skip_on[1] for skip_on in skip]
+
+    j = 0
+    for i in range(layers):
+        if i in skip_on: # add skip connections
+            pose, activation = addSkipConnection(poses[skip_from[j]], activations[skip_from[j]], pose, activation)
+            j += 1
+
+        pose, activation, c_1 = cl.layers.conv2d(pose,
+                                        activation,
+                                        **params,
+                                        name='ConvCaps_layer' + str(i))   
+        
+        poses.append(pose)
+        activations.append(activation)
+
+    return pose, activation, c_1

@@ -116,7 +116,16 @@ def get_learning_rate(step, decay_step, lr, lr_0, method='standard'):
         return get_decaying_lr_staircase(lr)
     
     return get_decaying_lr(epoch, lr_0)
+
+
+def get_adaptive_lr(prev_loss, curr_loss, lr):
+    '''
+    if loss has not decreased, devide lr by 10
+    '''
+    if  prev_loss < curr_loss:
+        return lr / 10
     
+
 '''
 decaying learning rates, from:
 https://medium.com/analytics-vidhya/learning-rate-decay-and-methods-in-deep-learning-2cee564f910b

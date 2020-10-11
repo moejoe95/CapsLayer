@@ -67,12 +67,17 @@ class CapsNet(object):
 
         self.routing_method = 'SDARouting'
         self.vec_shape = [8, 1]
-        self.decoder = 'NONE'
+        self.decoder = 'DECONV'
         self.attention = False
         self.num_iter = 3
 
         # residual subnetwork
         self.preCapsResidualNet = False
+
+        # residual capsule network
+        self.layers = 4
+        self.skip = [(0,3)] 
+        self.make_skips = False
 
         self.conv1_params = {
             "filters": 64,
@@ -126,8 +131,13 @@ class CapsNet(object):
                                                 method="norm",
                                                 name="PrimaryCaps_layer")
 
-        # residual capsule network                                      
-        pose, activation, c_1 = cl.layers.residualCapsNetwork(pose, activation, self.conv_caps_params)                                    
+        # residual capsule network                                     
+        pose, activation, c_1 = cl.layers.residualCapsNetwork(pose, 
+                                            activation, 
+                                            self.conv_caps_params, 
+                                            layers=self.layers, 
+                                            skip=self.skip,
+                                            make_skips=self.make_skips) 
 
         # fully connected capsule layer
         with tf.compat.v1.variable_scope('FullyConnCaps_layer'):
@@ -219,7 +229,6 @@ class CapsNet(object):
 
     def train(self, optimizer, num_gpus=1):
         self.global_step = tf.Variable(1, name='global_step', trainable=False)
-        self.lr = cl.losses.get_learning_rate(self.global_step, int(cfg.decay_step), self.lr, cfg.learning_rate)
 
         cl.summary.scalar('learning_rate', self.lr, verbose=cfg.summary_verbose)
         optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr)
@@ -227,6 +236,11 @@ class CapsNet(object):
         total_loss = self._loss()
         train_ops = optimizer.minimize(total_loss, global_step=self.global_step)
         summary_ops = tf.compat.v1.summary.merge_all()
+
+        if self.global_step % 60000 == 0: # check if learning rate needs decrease
+            if self.prev_loss is not None:
+                self.lr = cl.losses.get_adaptive_lr()
+            self.prev_loss = total_loss
 
         return(total_loss, train_ops, summary_ops)
 

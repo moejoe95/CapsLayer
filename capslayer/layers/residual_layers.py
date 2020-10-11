@@ -123,7 +123,7 @@ def addSkipConnection(res_pose, res_activation, previous_pose, previous_activati
     return pose_sum, activation_sum
 
 
-def residualCapsNetwork(pose, activation, params, layers=6, skip=((1,3), (3,5))):
+def residualCapsNetwork(pose, activation, params, layers=6, skip=[(1,3), (3,5)], make_skips=True):
     """
     Adds a Residual Capsule Network.
     """
@@ -134,7 +134,7 @@ def residualCapsNetwork(pose, activation, params, layers=6, skip=((1,3), (3,5)))
 
     j = 0
     for i in range(layers):
-        if i in skip_on: # add skip connections
+        if i in skip_on and make_skips: # add skip connections
             pose, activation = addSkipConnection(poses[skip_from[j]], activations[skip_from[j]], pose, activation)
             j += 1
 

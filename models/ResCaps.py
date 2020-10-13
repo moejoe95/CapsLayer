@@ -65,9 +65,9 @@ class CapsNet(object):
 
         # set model parameters
 
-        self.routing_method = 'SDARouting'
+        self.routing_method = 'SDARouting' # RBA, EMRouting or SDA
         self.vec_shape = [8, 1]
-        self.decoder = 'NONE'
+        self.decoder = 'NONE' # DECONV, FC or NONE
         self.attention = False
         self.num_iter = 3
 
@@ -82,13 +82,13 @@ class CapsNet(object):
         self.conv1_params = {
             "filters": 32,
             "kernel_size": 9,
-            "strides": 2
+            "strides": 2 # 1
         }
 
         self.prim_caps_params = {
             "filters": 32,
-            "kernel_size": 7,
-            "strides": 1,
+            "kernel_size": 7, # 9
+            "strides": 1, # 2
             "out_caps_dims": self.vec_shape
         }
 

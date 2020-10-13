@@ -129,8 +129,8 @@ def residualCapsNetwork(pose, activation, params, layers=6, skip=[(1,3), (3,5)],
     """
     poses, activations = [], []
 
-    skip_from = [skip_from[0] for skip_from in skip]
-    skip_on = [skip_on[1] for skip_on in skip]
+    skip_from = [skip_from[0]-1 for skip_from in skip]
+    skip_on = [skip_on[1]-1 for skip_on in skip]
 
     j = 0
     for i in range(layers):

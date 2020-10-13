@@ -124,6 +124,8 @@ def get_adaptive_lr(prev_loss, curr_loss, lr):
     '''
     if  prev_loss < curr_loss:
         return lr / 10
+        
+    return lr
     
 
 '''

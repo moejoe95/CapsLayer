@@ -67,7 +67,7 @@ class CapsNet(object):
 
         self.routing_method = 'SDARouting'
         self.vec_shape = [8, 1]
-        self.decoder = 'DECONV'
+        self.decoder = 'NONE'
         self.attention = False
         self.num_iter = 3
 
@@ -75,12 +75,12 @@ class CapsNet(object):
         self.preCapsResidualNet = False
 
         # residual capsule network
-        self.layers = 4
-        self.skip = [(0,3)] 
-        self.make_skips = False
+        self.layers = 3
+        self.skip = [(1,3)] 
+        self.make_skips = True
 
         self.conv1_params = {
-            "filters": 64,
+            "filters": 32,
             "kernel_size": 9,
             "strides": 2
         }
@@ -93,7 +93,7 @@ class CapsNet(object):
         }
 
         self.conv_caps_params = {
-            "filters": 16,
+            "filters": 32,
             "kernel_size": 3,
             "strides": 1,
             "out_caps_dims": self.vec_shape,
@@ -239,7 +239,7 @@ class CapsNet(object):
 
         if self.global_step % 60000 == 0: # check if learning rate needs decrease
             if self.prev_loss is not None:
-                self.lr = cl.losses.get_adaptive_lr()
+                self.lr = cl.losses.get_adaptive_lr(self.prev_loss, total_loss, self.lr)
             self.prev_loss = total_loss
 
         return(total_loss, train_ops, summary_ops)

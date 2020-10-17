@@ -76,19 +76,19 @@ class CapsNet(object):
 
         # residual capsule network
         self.layers = 3
-        self.skip = [(1,3)] 
+        self.skip = [(0,3)] 
         self.make_skips = True
 
         self.conv1_params = {
-            "filters": 32,
-            "kernel_size": 9,
-            "strides": 2 # 1
+            "filters": 64,
+            "kernel_size": 7,
+            "strides": 2
         }
 
         self.prim_caps_params = {
-            "filters": 32,
-            "kernel_size": 7, # 9
-            "strides": 1, # 2
+            "filters": 64,
+            "kernel_size": 9,
+            "strides": 2,
             "out_caps_dims": self.vec_shape
         }
 
@@ -131,6 +131,7 @@ class CapsNet(object):
                                                 method="norm",
                                                 name="PrimaryCaps_layer")
 
+        print('pose', pose.shape)
         # residual capsule network                                     
         pose, activation, c_1 = cl.layers.residualCapsNetwork(pose, 
                                             activation, 

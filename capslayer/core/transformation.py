@@ -58,7 +58,11 @@ def transforming(inputs, num_outputs, out_caps_dims, name=None):
         in_pose = tf.expand_dims(inputs, axis=-3)
         ones = tf.ones(shape=prefix_shape + [1, 1])
         in_pose = tf.expand_dims(in_pose * ones, axis=expand_axis)
-        transform_mat = tf.get_variable("transformation_matrix", shape=shape)
+
+        # initialize from gaussian distribution
+        std_init = tf.random_normal_initializer(stddev=0.1)
+
+        transform_mat = tf.get_variable("transformation_matrix", shape=shape, initializer=std_init)
         votes = tf.reduce_sum(in_pose * transform_mat, axis=reduce_sum_axis)
 
         return votes

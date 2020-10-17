@@ -28,6 +28,7 @@ import os
 import tensorflow as tf
 from capslayer.data.utils.download_utils import maybe_download_and_extract
 from capslayer.data.datasets.cifar10.writer import tfrecord_runner
+from capslayer.data.utils.augment import Augmenter
 
 
 def parse_fun(serialized_example):
@@ -37,9 +38,9 @@ def parse_fun(serialized_example):
                                        features={'image': tf.io.FixedLenFeature([], tf.string),
                                                  'label': tf.io.FixedLenFeature([], tf.int64)})
     image = tf.decode_raw(features['image'], tf.float32)
-    image = tf.reshape(image, shape=[32 * 32 * 3])
-    image.set_shape([32 * 32 * 3])
-    image = tf.cast(image, tf.float32) / 255. # * (2. / 255) - 1.
+
+    image = augmenter.augment(image)
+    
     label = tf.cast(features['label'], tf.int32)
     features = {'images': image, 'labels': label}
     return(features)
@@ -72,6 +73,8 @@ class DataLoader(object):
         self.next_element = None
         self.path = path
         self.name = name
+        self.augment = Augment(32)
+
 
     def __call__(self, batch_size, mode):
         """

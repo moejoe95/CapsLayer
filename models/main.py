@@ -175,14 +175,16 @@ def evaluate(model, data_loader):
     model.create_network(inputs, labels)
 
     # Create files to save evaluating results
-    fd = save_to()
+    fd = save_to(model.model_result_dir)
     saver = tf.compat.v1.train.Saver()
 
     config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
     config.gpu_options.allow_growth = True
     with tf.compat.v1.Session(config=config) as sess:
         test_handle = sess.run(test_iterator.string_handle())
-        saver.restore(sess, tf.train.latest_checkpoint(cfg.logdir))
+        
+        last_checkpoint = tf.train.latest_checkpoint(cfg.logdir)
+        saver.restore(sess, last_checkpoint)
         tf.logging.info('Model restored!')
 
         probs = []

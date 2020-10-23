@@ -67,9 +67,10 @@ class CapsNet(object):
 
         self.routing_method = 'SDARouting' # RBA, EMRouting or SDA
         self.vec_shape = [8, 1]
-        self.decoder = 'NONE' # DECONV, FC or NONE
+        self.decoder = 'FC' # DECONV, FC or NONE
         self.attention = False
-        self.num_iter = 3
+        self.num_iter = 2
+        self.drop_ratio = 0.5
 
         # residual subnetwork
         self.preCapsResidualNet = False
@@ -81,13 +82,13 @@ class CapsNet(object):
 
         self.conv1_params = {
             "filters": 64,
-            "kernel_size": 7,
-            "strides": 2
+            "kernel_size": 9,
+            "strides": 1
         }
 
         self.prim_caps_params = {
             "filters": 64,
-            "kernel_size": 9,
+            "kernel_size": 7,
             "strides": 2,
             "out_caps_dims": self.vec_shape
         }
@@ -95,7 +96,7 @@ class CapsNet(object):
         self.conv_caps_params = {
             "filters": 32,
             "kernel_size": 3,
-            "strides": 1,
+            "strides": 2,
             "out_caps_dims": self.vec_shape,
             "num_iter": self.num_iter,
             "routing_method": self.routing_method,
@@ -131,14 +132,14 @@ class CapsNet(object):
                                                 method="norm",
                                                 name="PrimaryCaps_layer")
 
-        print('pose', pose.shape)
         # residual capsule network                                     
         pose, activation, c_1 = cl.layers.residualCapsNetwork(pose, 
                                             activation, 
                                             self.conv_caps_params, 
                                             layers=self.layers, 
                                             skip=self.skip,
-                                            make_skips=self.make_skips) 
+                                            make_skips=self.make_skips,
+                                            drop_ratio=self.drop_ratio) 
 
         # fully connected capsule layer
         with tf.compat.v1.variable_scope('FullyConnCaps_layer'):

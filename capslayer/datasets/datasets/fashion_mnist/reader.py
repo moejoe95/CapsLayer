@@ -32,16 +32,13 @@ def parse_fun(serialized_example):
                                                  'height': tf.FixedLenFeature([], tf.int64),
                                                  'width': tf.FixedLenFeature([], tf.int64),
                                                  'depth': tf.FixedLenFeature([], tf.int64)})
-    height = tf.cast(features['height'], tf.int32)
-    width = tf.cast(features['width'], tf.int32)
-    depth = tf.cast(features['depth'], tf.int32)
-    image = tf.decode_raw(features['image'], tf.float32)
-    image = tf.reshape(image, shape=[height * width * depth])
-    image.set_shape([28 * 28 * 1])
-    image = tf.cast(image, tf.float32) * (1. / 255)
+
     label = tf.cast(features['label'], tf.int32)
-    features = {'images': image, 'labels': label}
-    return(features)
+
+    image = tf.decode_raw(features['image'], tf.float32)
+    image = augmenter.augment(image, crop='no')
+    
+    return {'images': image, 'labels': label}
 
 
 class DataLoader(object):
@@ -76,6 +73,7 @@ class DataLoader(object):
         self.next_element = None
         self.path = path
         self.name = name
+        self.augment = Augment(28)
 
     def __call__(self, batch_size, mode):
         """

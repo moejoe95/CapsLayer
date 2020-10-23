@@ -23,22 +23,26 @@ class Augmenter:
         ])
 
         self.randomCrop = tf.keras.Sequential([
-            preprocessing.RandomCrop(28, 28),
+            preprocessing.RandomCrop(24, 24),
         ])
 
         self.centerCrop = tf.keras.Sequential([
-            preprocessing.CenterCrop(28, 28),
+            preprocessing.CenterCrop(24, 24),
         ])
 
         # additive gaussian noise
-        gnoise = tf.random.normal(shape=tf.shape(image), mean=0.0, stddev=0.05, dtype=tf.float32)
         self.randomNoise = tf.keras.Sequential([
-            tf.add(image, gnoise),
+            tf.add(image, tf.random.normal(shape=tf.shape(image), mean=0.0, stddev=0.05, dtype=tf.float32)),
         ])
 
 
-    def augment(image):
+    def augment(image, crop="center"):
         image = self.resize(image)
         image = self.randomFlipX(image)
         image = self.randomZoom(image)
+        image = self.randomNoise(image)
+        if crop == "random":
+            image = self.randomCrop(image)
+        elif crop == 'center':
+            image = self.centerCrop(image)
         return image

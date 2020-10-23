@@ -163,6 +163,7 @@ def SDARouting(votes, act_norm, num_routing):
 
     # get probability by calculating norm
     probs = tf.norm(pose, axis=[-2, -1])
+    probs = tf.clip_by_value(probs, 1e-20, 1. - 1e-20)
 
     return pose, probs, route
 

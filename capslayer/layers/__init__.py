@@ -27,6 +27,7 @@ from capslayer.layers.layers import dense as fully_connected
 from capslayer.layers.residual_layers import residualConvs
 from capslayer.layers.residual_layers import residualCapsNetwork
 from capslayer.layers.residual_layers import getParamsSkip
+from capslayer.layers.dropout import dropout
 
 __all__ = [
         'conv1d', 
@@ -38,5 +39,6 @@ __all__ = [
         'fully_connected', 
         'residualConvs', 
         'getParamsSkip',
-        'residualCapsNetwork'
+        'residualCapsNetwork',
+        'dropout'
         ]

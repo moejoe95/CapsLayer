@@ -24,6 +24,7 @@ import tensorflow as tf
 from tensorflow.python.client import timeline
 from importlib import import_module
 from capslayer.plotlib import plot_activation
+import capslayer as cl
 
 from config import cfg
 
@@ -73,24 +74,19 @@ def train(model, data_loader):
     # Setting up model
     training_iterator = data_loader(cfg.batch_size, mode="train")
     validation_iterator = data_loader(cfg.batch_size, mode="eval")
-    inputs = data_loader.next_element["images"]
-    labels = data_loader.next_element["labels"]
+    inputs = data_loader.next_element[0]
+    labels = data_loader.next_element[1]
 
     model.create_network(inputs, labels)
-
     loss, train_ops, summary_ops = model.train(cfg.num_gpus)
-
-    # Creating files, saver and summary writer to save training results
     fd = save_to(model.model_result_dir)
+
     summary_writer = tf.compat.v1.summary.FileWriter(cfg.logdir)
     summary_writer.add_graph(tf.compat.v1.get_default_graph())
-
     saver = tf.compat.v1.train.Saver(max_to_keep=3)
-
-    # Setting up training session
-    #run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
     run_metadata = tf.compat.v1.RunMetadata()
     config = tf.compat.v1.ConfigProto()
+
     config.gpu_options.allow_growth = True
 
     with tf.compat.v1.Session(config=config) as sess:
@@ -143,13 +139,14 @@ def train(model, data_loader):
                     try:
                         val_acc, prob, label = sess.run([model.accuracy, model.probs, labels], feed_dict={data_loader.handle: validation_handle})
                         probs.append(prob)
-                        targets.append(label)
+                        targets.append([label])
                         total_acc += val_acc
                         n += 1
                     except tf.errors.OutOfRangeError:
                         break
                 probs = np.concatenate(probs, axis=0)
                 targets = np.concatenate(targets, axis=0).reshape((-1, 1))
+                targets = np.asarray(targets)
                 avg_acc = total_acc / n
                 path = os.path.join(os.path.join(cfg.results_dir, "activations"))
                 plot_activation(np.hstack((probs, targets)), step=step, save_to=path)
@@ -224,36 +221,21 @@ def main(_):
     else:
         raise ValueError('Unsupported model, please check the name of model:', cfg.model)
 
-    # load data set
-    dataset = "capslayer.data.datasets." + cfg.dataset
-    data_loader = import_module(dataset).DataLoader(path=cfg.data_dir,
-                                                    splitting=cfg.splitting,
-                                                    num_works=cfg.num_works)
-
     # Deciding which dataset to use
     if cfg.dataset == 'mnist' or cfg.dataset == 'fashion_mnist':
-        height = 28
-        width = 28
-        channels = 1
+        shape = [28, 28, 1]
         num_label = 10
     elif cfg.dataset == 'cifar10' or cfg.dataset == 'cifar100':
-        height = 32
-        width = 32
-        channels = 3
+        shape = [32, 32, 3]
         num_label = 10
-    elif cfg.dataset == 'small_norb':
-        num_label = 5
-        height = 32
-        width = 32
-        channels = 1
-    elif cfg.dataset == 'imagenette':
-        num_label = 10
-        height = 160
-        width = 160
-        channels = 3
+    else:
+        raise NotImplementedError(cfg.dataset)
 
     # Initializing model and data loader
-    net = model(height=height, width=width, channels=channels, num_label=num_label)
+    net = model(height=shape[0], width=shape[1], channels=shape[2], num_label=num_label)
+
+    # load data set
+    data_loader = cl.datasets.DataLoader(cfg.dataset, shape=shape)
 
     # Deciding to train or evaluate model
     if cfg.is_training:

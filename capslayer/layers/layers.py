@@ -86,14 +86,14 @@ def dense(inputs, activation,
 
         if routing_method == 'SDARouting':
             activation = tf.norm(inputs, axis=(-2, -1))
-            return routing(vote, activation, routing_method)
+            return routing(vote, activation, routing_method, num_iter)
 
         pose, activation = routing(vote, activation, routing_method, num_iter=num_iter)
         # pose, activation = cl.core.gluing(vote, activation)
         assert len(pose.shape) == 4
         assert len(activation.shape) == 2
 
-    return(pose, activation)
+    return pose, activation, None
 
 
 def primaryCaps(inputs, filters,

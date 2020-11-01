@@ -107,7 +107,7 @@ def conv2d(inputs,
         # 3. routing
         pose, activation = routing(vote, activation, method=routing_method, num_iter=num_iter)
 
-        return pose, activation
+        return pose, activation, None
 
 
 def conv3d(inputs,

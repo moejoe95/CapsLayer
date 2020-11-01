@@ -18,7 +18,7 @@ flags.DEFINE_float('lambda_val', 0.5, 'down weight of the loss for absent digit 
 
 # for training
 flags.DEFINE_integer('batch_size', 32, 'batch size')
-flags.DEFINE_integer('num_steps', 300000, 'The number of training epochs')
+flags.DEFINE_integer('num_steps', 60000, 'The number of training epochs')
 flags.DEFINE_integer('train_sum_every', 1000, 'the frequency of saving train summary(step)')
 flags.DEFINE_integer('val_sum_every', 1000, 'the frequency of saving evaluation summary(step)')
 flags.DEFINE_integer('save_ckpt_every', 1000, 'the frequency of saving model(step)')
@@ -35,8 +35,8 @@ flags.DEFINE_string('model', 'ResCaps',
                     'The model to use. Default: ResCaps')
 
 supported_datasets = ["mnist", "fashion_mnist", "cifar10", "cifar100", "small-norb", "imagenette"]
-flags.DEFINE_string('dataset', 'cifar10',
-                    'The name of dataset, one of [' + ", ".join(supported_datasets) + ']. Default: cifar10')
+flags.DEFINE_string('dataset', 'fashion_mnist',
+                    'The name of dataset, one of [' + ", ".join(supported_datasets) + ']. Default: fashion_mnist')
 
 data_dir = os.path.abspath("data")
 results_dir = os.path.join('models', 'results')
@@ -59,6 +59,17 @@ flags.DEFINE_integer('num_works', 8,
 flags.DEFINE_boolean('summary_verbose', True, 'Use tensorflow summary')
 
 flags.DEFINE_boolean('verbose', True, 'verbose output')
+
+############################
+#   model parameters       #
+############################
+flags.DEFINE_boolean('attention', False, 'activate attention mechanism')
+flags.DEFINE_boolean('preResNet', False, 'activate residual sub-network in front of capsule network')
+flags.DEFINE_string('routing_alg', 'SDARouting', 'routing algorithm; one of SDARouting, DynamicRouting or EMRouting')
+flags.DEFINE_string('decoder', 'FC', 'decoder network; one of FC (fully-connected), DECONV or NONE')
+flags.DEFINE_integer('routing_iterations', 2, 'number of routing iterations')
+flags.DEFINE_float('drop_ratio', 0.5, 'the dropout ratio in capsule layers')
+flags.DEFINE_string('drop_mode', 'VECTOR', 'either VECTOR or NEURON')
 
 ############################
 #   distributed setting    #

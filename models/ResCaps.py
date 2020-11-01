@@ -44,6 +44,17 @@ class CapsNet(object):
         self.num_label = num_label
 
         self.lr = cfg.learning_rate
+        self.routing_method = cfg.routing_alg
+        
+        self.decoder = cfg.decoder
+        self.attention = cfg.attention
+        self.num_iter = cfg.routing_iterations
+        self.drop_ratio = cfg.drop_ratio
+        self.drop_mode = cfg.drop_mode
+        self.preCapsResidualNet = cfg.preResNet
+
+        self.T = tf.zeros((), dtype=tf.float32)
+        self.D = tf.zeros((), dtype=tf.float32)
 
 
     def create_network(self, inputs, labels):
@@ -64,18 +75,8 @@ class CapsNet(object):
         self.labels = labels
 
         # set model parameters
-
-        self.routing_method = 'SDARouting' # RBA, EMRouting or SDA
         self.vec_shape = [8, 1]
-        self.decoder = 'FC' # DECONV, FC or NONE
-        self.attention = False
-        self.num_iter = 2
-        self.drop_ratio = 0.5
 
-        # residual subnetwork
-        self.preCapsResidualNet = False
-
-        # residual capsule network
         self.layers = 3
         self.skip = [(0,3)] 
         self.make_skips = True
@@ -107,6 +108,7 @@ class CapsNet(object):
             "num_outputs": self.num_label,
             "out_caps_dims": [16, 1],
             "routing_method": self.routing_method,
+            "num_iter": self.num_iter,
             "coordinate_addition": False
         }
 
@@ -139,7 +141,8 @@ class CapsNet(object):
                                             layers=self.layers, 
                                             skip=self.skip,
                                             make_skips=self.make_skips,
-                                            drop_ratio=self.drop_ratio) 
+                                            drop_ratio=self.drop_ratio,
+                                            drop_mode=self.drop_mode) 
 
         # fully connected capsule layer
         with tf.compat.v1.variable_scope('FullyConnCaps_layer'):
@@ -153,8 +156,9 @@ class CapsNet(object):
         
 
         with tf.compat.v1.variable_scope('gamma_metrics'):
-            self.T = (cl.ops.t_score(c_1) + cl.ops.t_score(c_2)) / 2                                      
-            self.D = cl.ops.d_score(activation)
+            if c_1 is not None and c_2 is not None:
+                self.T = (cl.ops.t_score(c_1) + cl.ops.t_score(c_2)) / 2                                
+                self.D = cl.ops.d_score(activation)
 
         # reconstruction network
         if self.decoder == 'FC':

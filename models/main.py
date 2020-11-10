@@ -138,20 +138,23 @@ def train(model, data_loader):
                 while True:
                     try:
                         val_acc, prob, label = sess.run([model.accuracy, model.probs, labels], feed_dict={data_loader.handle: validation_handle})
-                        probs.append(prob)
-                        targets.append([label])
+                        #probs.append(prob)
+                        #targets.append([label])
                         total_acc += val_acc
                         n += 1
                     except tf.errors.OutOfRangeError:
                         break
-                probs = np.concatenate(probs, axis=0)
-                targets = np.concatenate(targets, axis=0).reshape((-1, 1))
-                targets = np.asarray(targets)
+
                 avg_acc = total_acc / n
-                path = os.path.join(os.path.join(cfg.results_dir, "activations"))
-                plot_activation(np.hstack((probs, targets)), step=step, save_to=path)
                 fd['val_acc.csv'].write("{:d},{:.4f}\n".format(step, avg_acc))
                 fd['val_acc.csv'].flush()
+
+                # plot activations
+                #probs = np.concatenate(probs, axis=0)
+                #targets = np.concatenate(targets, axis=0).reshape((-1, 1))
+                #path = os.path.join(os.path.join(cfg.results_dir, "activations"))
+                #plot_activation(np.hstack((probs, targets)), step=step, save_to=path)
+
             if step % cfg.save_ckpt_every == 0:
                 saver.save(sess,
                            save_path=os.path.join(cfg.logdir, 'model.ckpt'),
@@ -164,7 +167,7 @@ def train(model, data_loader):
                 print(log_str)
 
 
-def evaluate(model, data_loader):
+def test(model, data_loader):
     # Setting up model
     test_iterator = data_loader(cfg.batch_size, mode="test")
     inputs = data_loader.next_element["images"]
@@ -241,7 +244,7 @@ def main(_):
     if cfg.is_training:
         train(net, data_loader)
     else:
-        evaluate(net, data_loader)
+        test(net, data_loader)
 
 
 if __name__ == "__main__":

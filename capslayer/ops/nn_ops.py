@@ -91,6 +91,8 @@ def space_to_batch_nd_v1(inputs, kernel_size, strides, name=None, padding='VALID
     with tf.name_scope(name):
 
         if padding == 'SAME':
+            if strides[0] > 1:
+                raise NotImplementedError('padding SAME with stride > 1')
             inputs = pad_input_same(inputs, kernel_size[0], strides[0])
 
         height, width, depth = cl.shape(inputs)[1:4]

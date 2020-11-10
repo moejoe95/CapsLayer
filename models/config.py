@@ -17,7 +17,7 @@ flags.DEFINE_float('m_scheduler', 1, '.')
 flags.DEFINE_float('lambda_val', 0.5, 'down weight of the loss for absent digit classes')
 
 # for training
-flags.DEFINE_integer('batch_size', 32, 'batch size')
+flags.DEFINE_integer('batch_size', 16, 'batch size')
 flags.DEFINE_integer('num_steps', 60000, 'The number of training epochs')
 flags.DEFINE_integer('train_sum_every', 1000, 'the frequency of saving train summary(step)')
 flags.DEFINE_integer('val_sum_every', 1000, 'the frequency of saving evaluation summary(step)')
@@ -68,8 +68,10 @@ flags.DEFINE_boolean('preResNet', False, 'activate residual sub-network in front
 flags.DEFINE_string('routing_alg', 'SDARouting', 'routing algorithm; one of SDARouting, DynamicRouting or EMRouting')
 flags.DEFINE_string('decoder', 'FC', 'decoder network; one of FC (fully-connected), DECONV or NONE')
 flags.DEFINE_integer('routing_iterations', 2, 'number of routing iterations')
-flags.DEFINE_float('drop_ratio', 0.5, 'the dropout ratio in capsule layers')
+flags.DEFINE_float('drop_ratio', -1, 'the dropout ratio in capsule layers')
 flags.DEFINE_string('drop_mode', 'VECTOR', 'either VECTOR or NEURON')
+flags.DEFINE_integer('conv_layers', 1, 'number of convolutional capsule layers')
+flags.DEFINE_integer('skip_dist', -1, 'make skip connections between every second convolutional layer')
 
 ############################
 #   distributed setting    #

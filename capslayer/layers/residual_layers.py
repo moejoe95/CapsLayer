@@ -123,20 +123,19 @@ def addSkipConnection(res_pose, res_activation, previous_pose, previous_activati
     return pose_sum, activation_sum
 
 
-def residualCapsNetwork(pose, activation, params, layers=6, skip=[(1,3), (3,5)], make_skips=True, drop_ratio=0.5, drop_mode='VECTOR'):
+def residualCapsNetwork(pose, activation, params, layers=3, skip_dist=2, drop_ratio=0.5, drop_mode='VECTOR'):
     """
     Adds a Residual Capsule Network.
     """
     poses, activations = [], []
 
-    skip_from = [skip_from[0]-1 for skip_from in skip]
-    skip_on = [skip_on[1]-1 for skip_on in skip]
+    assert skip_dist < layers
 
-    j = 0
+    make_skips = False if (skip_dist < 0 or skip_dist is None) else True
+    print('make_skips:', make_skips)
     for i in range(layers):
-        if i in skip_on and make_skips: # add skip connections
-            pose, activation = addSkipConnection(poses[skip_from[j]], activations[skip_from[j]], pose, activation)
-            j += 1
+        if make_skips and i > 0 and i % skip_dist == 0: # add skip connections
+            pose, activation = addSkipConnection(poses[i-skip_dist], activations[i-skip_dist], pose, activation)
         
         if drop_ratio > 0:
             pose, activation = cl.layers.dropout(pose,
@@ -151,5 +150,9 @@ def residualCapsNetwork(pose, activation, params, layers=6, skip=[(1,3), (3,5)],
         
         poses.append(pose)
         activations.append(activation)
+
+    
+    if make_skips and layers % skip_dist == 0: # add skip connections
+        pose, activation = addSkipConnection(poses[layers-skip_dist], activations[layers-skip_dist], pose, activation)
 
     return pose, activation, c_1

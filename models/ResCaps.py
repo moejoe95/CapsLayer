@@ -53,6 +53,9 @@ class CapsNet(object):
         self.drop_mode = cfg.drop_mode
         self.preCapsResidualNet = cfg.preResNet
 
+        self.skip_dist = cfg.skip_dist
+        self.layers = cfg.conv_layers
+
         self.T = tf.zeros((), dtype=tf.float32)
         self.D = tf.zeros((), dtype=tf.float32)
 
@@ -77,10 +80,6 @@ class CapsNet(object):
         # set model parameters
         self.vec_shape = [8, 1]
 
-        self.layers = 3
-        self.skip = [(0,3)] 
-        self.make_skips = True
-
         self.conv1_params = {
             "filters": 64,
             "kernel_size": 9,
@@ -97,7 +96,7 @@ class CapsNet(object):
         self.conv_caps_params = {
             "filters": 32,
             "kernel_size": 3,
-            "strides": 2,
+            "strides": 1,
             "out_caps_dims": self.vec_shape,
             "num_iter": self.num_iter,
             "routing_method": self.routing_method,
@@ -139,8 +138,7 @@ class CapsNet(object):
                                             activation, 
                                             self.conv_caps_params, 
                                             layers=self.layers, 
-                                            skip=self.skip,
-                                            make_skips=self.make_skips,
+                                            skip_dist=self.skip_dist,
                                             drop_ratio=self.drop_ratio,
                                             drop_mode=self.drop_mode) 
 

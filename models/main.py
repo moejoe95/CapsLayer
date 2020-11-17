@@ -81,18 +81,21 @@ def train(model, data_loader):
     loss, train_ops, summary_ops = model.train(cfg.num_gpus)
     fd = save_to(model.model_result_dir)
 
-    summary_writer = tf.compat.v1.summary.FileWriter(cfg.logdir)
+    logdir = model.model_result_dir + '/log'
+
+    summary_writer = tf.compat.v1.summary.FileWriter(logdir)
     summary_writer.add_graph(tf.compat.v1.get_default_graph())
     saver = tf.compat.v1.train.Saver(max_to_keep=3)
     run_metadata = tf.compat.v1.RunMetadata()
+
     config = tf.compat.v1.ConfigProto()
 
     config.gpu_options.allow_growth = True
 
     with tf.compat.v1.Session(config=config) as sess:
 
-        last_checkpoint = tf.train.latest_checkpoint(cfg.logdir)
-
+        last_checkpoint = tf.train.latest_checkpoint(logdir)
+        print(logdir)
         if last_checkpoint is None:
             tf.logging.info('Train model from scratch!')
             init_op = tf.global_variables_initializer()
@@ -157,7 +160,7 @@ def train(model, data_loader):
 
             if step % cfg.save_ckpt_every == 0:
                 saver.save(sess,
-                           save_path=os.path.join(cfg.logdir, 'model.ckpt'),
+                           save_path=os.path.join(logdir, 'model.ckpt'),
                            global_step=step)
 
             duration = time.time() - start_time
@@ -183,7 +186,7 @@ def test(model, data_loader):
     with tf.compat.v1.Session(config=config) as sess:
         test_handle = sess.run(test_iterator.string_handle())
         
-        last_checkpoint = tf.train.latest_checkpoint(cfg.logdir)
+        last_checkpoint = tf.train.latest_checkpoint(logdir)
         saver.restore(sess, last_checkpoint)
         tf.logging.info('Model restored!')
 
@@ -233,6 +236,9 @@ def main(_):
         num_label = 10
     else:
         raise NotImplementedError(cfg.dataset)
+        
+    print("using device:", cfg.use_gpu)
+    os.environ["CUDA_VISIBLE_DEVICES"]=cfg.use_gpu
 
     # Initializing model and data loader
     net = model(height=shape[0], width=shape[1], channels=shape[2], num_label=num_label)
@@ -241,6 +247,7 @@ def main(_):
     data_loader = cl.datasets.DataLoader(cfg.dataset, shape=shape)
 
     # Deciding to train or evaluate model
+    print("train:", cfg.is_training)
     if cfg.is_training:
         train(net, data_loader)
     else:

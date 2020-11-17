@@ -250,14 +250,17 @@ class CapsNet(object):
 
 
     def log_params(self):
-        i = 0
-        dir_exists = False
-        while not dir_exists:
-            self.model_result_dir = os.path.join(cfg.results_dir, cfg.dataset + '_' + cfg.model + '_' + str(i))
-            if not os.path.exists(self.model_result_dir):
-                os.makedirs(self.model_result_dir)
-                dir_exists = True
-            i += 1
+        if cfg.save_to != None:
+            self.model_result_dir = os.path.join(cfg.results_dir, cfg.save_to)
+        else:
+            i = 0
+            dir_exists = False
+            while not dir_exists:
+                self.model_result_dir = os.path.join(cfg.results_dir, cfg.dataset + '_' + cfg.model + '_' + str(i))
+                if not os.path.exists(self.model_result_dir):
+                    os.makedirs(self.model_result_dir)
+                    dir_exists = True
+                i += 1
 
         params = os.path.join(self.model_result_dir, 'params.conf')
 

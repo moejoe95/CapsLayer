@@ -46,8 +46,7 @@ flags.DEFINE_string('data_dir', data_dir,
                     'The directory containing dataset. Default: ' + data_dir)
 flags.DEFINE_string('results_dir', results_dir,
                     'The directory to save all results. Default: ' + results_dir)
-flags.DEFINE_string('logdir', logdir,
-                    'Logs directory for saving checkpoint. Default: ' + logdir)
+flags.DEFINE_string('save_to', None, 'The sub-directory to save all results')
 flags.DEFINE_string('splitting', "TVT",
                     'One of "TVT" or "TT" (case-insensitive). \
                      "TVT" for training-validation-test data splitting, and "TT" for training-test splitting. \
@@ -59,6 +58,8 @@ flags.DEFINE_integer('num_works', 8,
 flags.DEFINE_boolean('summary_verbose', True, 'Use tensorflow summary')
 
 flags.DEFINE_boolean('verbose', True, 'verbose output')
+
+flags.DEFINE_string("use_gpu", "0", "The GPU to use for training/testing model.")
 
 ############################
 #   model parameters       #
